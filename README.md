@@ -85,7 +85,7 @@ src/herdr-kit/          Bundled enhancement source
 config/                 Default settings
 examples/               Generic layout examples
 tests/                  Automated installer tests
-dev/desktop/            Disposable Ubuntu + VNC test environment
+tests/desktop/          Disposable Ubuntu + VNC test environment
 docs/                   Configuration and development guides
 ```
 

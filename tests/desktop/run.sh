@@ -6,12 +6,12 @@ docker_cmd=(docker)
 if [[ -n "${HERDR_TEST_DOCKER_CONTEXT:-}" ]]; then
     docker_cmd+=(--context "$HERDR_TEST_DOCKER_CONTEXT")
 fi
-docker_cmd+=(compose -f "$setup_root/dev/desktop/compose.yaml")
+docker_cmd+=(compose -f "$setup_root/tests/desktop/compose.yaml")
 case "${1:-start}" in
   start)
     "${docker_cmd[@]}" up -d --build --wait
     echo 'Desktop: http://localhost:6080/vnc.html?autoconnect=true&resize=scale'
-    echo 'Next: ./dev/desktop/run.sh install' ;;
+    echo 'Next: ./tests/desktop/run.sh install' ;;
   install)
     # shellcheck disable=SC2016
     "${docker_cmd[@]}" exec -T desktop bash -o pipefail -c \

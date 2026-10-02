@@ -5,7 +5,7 @@ Run checks with Python 3.11+:
 ```sh
 python3 -m unittest discover -s tests -v
 ./install.sh --dry-run
-shellcheck install.sh dev/desktop/*.sh
+shellcheck install.sh tests/desktop/*.sh
 zsh -n src/herdr-kit/setup.zsh
 ```
 
@@ -16,16 +16,16 @@ Dependency changes belong in `dependencies.json`. Toolkit changes belong in `src
 With Docker and Docker Compose available:
 
 ```sh
-./dev/desktop/run.sh start
-./dev/desktop/run.sh install
+./tests/desktop/run.sh start
+./tests/desktop/run.sh install
 ```
 
 Open http://localhost:6080/vnc.html?autoconnect=true&resize=scale for the desktop. The base image provides a desktop and graphical terminal, but no Herdr, plugins, Rust, Go, uv, or jq. The normal installer must supply its prerequisites. No GitHub credential is provided to the container.
 
 ```sh
-./dev/desktop/run.sh shell    # Inspect the test machine
-./dev/desktop/run.sh reset    # Discard its files and start fresh
-./dev/desktop/run.sh stop     # Remove the container
+./tests/desktop/run.sh shell    # Inspect the test machine
+./tests/desktop/run.sh reset    # Discard its files and start fresh
+./tests/desktop/run.sh stop     # Remove the container
 ```
 
 Set `HERDR_TEST_DOCKER_CONTEXT` to use a particular Docker context. The repository is mounted read-only; the host home and Docker socket are not mounted. The VNC endpoint is bound to localhost. Logs are written inside the container at `~/test-results/install.log`; save them before resetting.
