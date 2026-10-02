@@ -16,6 +16,8 @@ import sys
 import tempfile
 from datetime import datetime, timezone
 
+from output import detail, message, section
+
 ROOT = Path(__file__).resolve().parents[2]
 BEGIN = '# >>> herdr-setup >>>'
 END = '# <<< herdr-setup <<<'
@@ -183,11 +185,17 @@ def install_plugins(lock, registry_path):
     installed = json.loads(registry_path.read_text()) if registry_path.exists() else []
     by_id = {p['plugin_id']: p for p in installed}
     auth_env = None
-    for plugin in lock['plugins']:
+    total = len(lock['plugins'])
+    for index, plugin in enumerate(lock['plugins'], 1):
+        name = plugin.get('name', plugin['id'])
+        progress = f'[{index}/{total}]'
         old = by_id.get(plugin['id'], {})
         if not plugin.get('enabled', True):
             if old.get('enabled'):
+                message(progress, f'{name} - disabling')
                 run('herdr', 'plugin', 'disable', plugin['id'])
+            else:
+                message(progress, f'{name} - disabled')
             continue
         source = old.get('source', {})
         root = Path(old.get('plugin_root', '/nonexistent'))
@@ -201,11 +209,14 @@ def install_plugins(lock, registry_path):
                 and (root / 'herdr-plugin.toml').is_file()):
             if not old.get('enabled'):
                 run('herdr', 'plugin', 'enable', plugin['id'])
+            message(progress, f'{name} - ready', color='32')
             continue
         spec = plugin['repository'] + ('/' + plugin['subdir'] if plugin['subdir'] else '')
         if auth_env is None:
             auth_env = github_environment()
+        message(progress, f'{name} - installing')
         run('herdr', 'plugin', 'install', spec, '--ref', plugin['commit'], '--yes', env=auth_env)
+        message('OK', f'{name} installed.', color='32')
     # Replace the old combined plugin only after all selected plugins install.
     legacy = by_id.get('dev.ariel.herdr-kit', {})
     if legacy.get('enabled'):
@@ -231,14 +242,21 @@ def main(argv=None):
     shell, shell_executable, shell_files = shell_settings(args.shell)
     loader = data_root / f'shell.{shell}'
     registry = config / 'plugins.json'
-    print(f"Herdr version for new installations: {lock['herdr']['version']}")
-    for target, packages in lock['packages'].items():
-        print(f'Packages ({target}): ' + ', '.join(packages))
-    for item in lock['plugins']:
-        print(f"Plugin: {item['name']} @ {item['ref']} ({'enabled' if item.get('enabled', True) else 'disabled'})")
-    print(f'Configuration: {config}')
-    print(f'Shell: {shell}; startup files: {"unchanged" if args.no_shell else ", ".join(map(str, shell_files))}')
+    section('Installation plan' if args.dry_run else 'Your installation')
+    detail('Herdr', f"{lock['herdr']['version']} for new installations")
+    detail('Plugins', f"{sum(p.get('enabled', True) for p in lock['plugins'])} enabled")
+    detail('Configuration', config)
+    detail('Shell', shell)
+    detail('Startup files', 'unchanged' if args.no_shell else ', '.join(map(str, shell_files)))
     if args.dry_run:
+        section('Dependencies')
+        for target, packages in lock['packages'].items():
+            detail(target, ', '.join(packages))
+        section('Plugins')
+        for item in lock['plugins']:
+            message('ON' if item.get('enabled', True) else 'OFF', item['name'])
+            detail('Revision', item['ref'])
+        message('PREVIEW', 'No changes made.')
         return 0
     if platform.system() not in ('Darwin', 'Linux'):
         raise ValueError('This setup supports macOS and Linux.')
@@ -250,7 +268,7 @@ def main(argv=None):
     if not match or tuple(map(int, match.groups())) < (0, 9, 3):
         raise ValueError('Herdr 0.9.3 or newer is required.')
     if version.strip() != 'herdr ' + lock['herdr']['version']:
-        print(f'Using {version}; this snapshot was captured with {lock["herdr"]["version"]}.')
+        message('NOTE', f'Using {version}; this snapshot was captured with {lock["herdr"]["version"]}.', color='33')
     if os.environ.get('HERDR_CONFIG_PATH'):
         raise ValueError('Unset HERDR_CONFIG_PATH before installing into the standard XDG configuration.')
     rc_contents = {}
@@ -263,7 +281,9 @@ def main(argv=None):
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
     writer = Writer(data_root / 'backups' / stamp)
     writer.backup(registry)
+    section('[3/4] Install plugins')
     install_plugins(lock, registry)
+    section('[4/4] Configure your environment')
     defaults = (ROOT / 'config/herdr.toml').read_text().replace('"@SHELL@"', json.dumps(shell_executable))
     configurations = [(config / 'config.toml', defaults)]
     installed = {p['plugin_id']: p for p in json.loads(registry.read_text())} if registry.exists() else {}
@@ -276,18 +296,23 @@ def main(argv=None):
             configurations.append((target, legacy_config.read_text() if migrate else source.read_text()))
     for target, content in configurations:
         if target.exists() and not args.replace_config:
-            print(f'Keeping existing configuration: {target}')
+            message('KEEP', str(target))
         else:
             writer.write(target, content)
     writer.write(loader, shell_loader(lock, registry, shell))
     for shell_rc, rc_content in rc_contents.items():
         writer.write(shell_rc, rc_content)
-    print(f'Installed. Open a new {shell} and reload Herdr configuration through its menu.')
+    section('Setup complete')
+    message('OK', 'Plugins and shell integration are ready.', color='32')
+    detail('Next', f'Open a new {shell}, then run herdr.')
+    detail('Existing Herdr session', 'Reload its configuration through the menu.')
     if args.no_shell:
-        print('Shell integration: source ' + shlex.quote(str(loader)))
-    print('Start Herdr: ' + shlex.quote(shutil.which('herdr')))
+        detail('Load helpers manually', 'source ' + shlex.quote(str(loader)))
+    if any(p['id'] == 'dev.ariel.herdr-alerts' and p.get('enabled', True) for p in lock['plugins']):
+        detail('Test sound', 'herdr-sound play')
+    detail('Herdr executable', shlex.quote(shutil.which('herdr')))
     if writer.records:
-        print(f'Backups: {writer.backup_root}')
+        detail('Backups', writer.backup_root)
     return 0
 
 
@@ -295,5 +320,5 @@ if __name__ == '__main__':
     try:
         sys.exit(main())
     except (ValueError, OSError, subprocess.CalledProcessError) as exc:
-        print(f'Install stopped: {exc}', file=sys.stderr)
+        message('ERROR', f'Install stopped: {exc}', color='31', error=True)
         sys.exit(1)

@@ -36,7 +36,7 @@ herdr_setup_main() {
             : > "$setup_tmp/headers"
         fi
         unset setup_token
-        printf 'Downloading Herdr Setup (%s)...\n' "$setup_ref"
+        printf '\n  GET  Herdr Setup (%s)\n' "$setup_ref"
         if ! curl --fail --silent --show-error --location --retry 3 \
             --header "@$setup_tmp/headers" \
             "https://api.github.com/repos/ariel-ps/herdr-setup/tarball/$setup_ref" \

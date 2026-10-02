@@ -1,5 +1,6 @@
 import hashlib
 import importlib.util
+import sys
 import json
 import os
 from pathlib import Path
@@ -11,6 +12,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('bootstrap', ROOT / 'src/installer/bootstrap.py')
 bootstrap = importlib.util.module_from_spec(spec)
+sys.path.insert(0, str(ROOT / "src/installer"))
 spec.loader.exec_module(bootstrap)
 
 

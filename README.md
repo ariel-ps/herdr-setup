@@ -1,42 +1,47 @@
 # Herdr Setup
 
-**Install Herdr with plugins to manage several coding agents side by side in your terminal.**
+A ready-to-use [Herdr](https://github.com/herdrdev/herdr) environment for running coding agents side by side. Distinguish panes by color, hear when an agent needs attention, and restore saved layouts.
 
-Give each pane its own color, get an alert when an agent needs attention, and save layouts to use again. Works on macOS, Ubuntu/Debian, and Fedora.
+**macOS · Ubuntu/Debian · Fedora · Bash and Zsh**
 
-You don't need Herdr installed already. Works with bash or zsh; existing settings are preserved.
+## What you get
 
-## What it adds
+| Feature | Plugin |
+| --- | --- |
+| A distinct color palette for each pane | [Colors](https://github.com/ariel-ps/herdr-colors) |
+| Sound and flash alerts when agents finish or need input | [Alerts](https://github.com/ariel-ps/herdr-alerts) |
+| Saved pane layouts and agent grids | [Layouts](https://github.com/ariel-ps/herdr-layouts) |
+| Agent inspection and session naming | [Sessions](https://github.com/ariel-ps/herdr-sessions) |
+| A Doom face that reflects Claude's context usage | [Doomface](https://github.com/ariel-ps/herdr-doomface) |
 
-- **[Pane colors](https://github.com/ariel-ps/herdr-colors)** — tell your agents apart at a glance.
-- **[Sound and flash alerts](https://github.com/ariel-ps/herdr-alerts)** — notice when an agent finishes or needs help.
-- **[Saved layouts and grids](https://github.com/ariel-ps/herdr-layouts)** — arrange your panes and reuse the layout.
-- **[Session helpers](https://github.com/ariel-ps/herdr-sessions)** — inspect agents and synchronize their names.
-- **[Doom face indicators](https://github.com/ariel-ps/herdr-doomface)** — visualize Claude's context usage.
-
-Each feature is a separate plugin. Also includes Herdr Plus, Board, Grid, Sidebar, memex, Plugin Manager, Terminal Code, and a [sidebar menu toggle](https://github.com/ariel-ps/herdr-sidebar-menu).
-
-## Prerequisites
-
-- **macOS:** Homebrew and its command-line build tools.
-- **Ubuntu/Debian:** `apt-get` and `sudo` or root access.
-- **Fedora:** `dnf` and `sudo` or root access.
-- A terminal, internet access, and `curl`/`tar` for the command below.
-
-Apple Silicon/ARM64 and Intel/x86-64 are supported. Herdr and build dependencies are installed automatically. Install and sign into your coding-agent CLIs separately.
+Also includes Herdr Plus, Board, Grid, Sidebar, memex, Plugin Manager, Terminal Code, and a [sidebar menu toggle](https://github.com/ariel-ps/herdr-sidebar-menu). Each plugin can be enabled independently in [`dependencies.json`](dependencies.json).
 
 ## Install
+
+You do not need Herdr installed or an existing project directory. Setup installs Herdr when missing, prepares dependencies, and connects the plugins to your shell.
+
+### Prerequisites
+
+| Platform | Required before installation |
+| --- | --- |
+| macOS | Homebrew and command-line build tools |
+| Ubuntu / Debian | `apt-get` and root or `sudo` access |
+| Fedora | `dnf` and root or `sudo` access |
+
+Use an ARM64 or x86-64 machine with a terminal, internet access, `curl`, and `tar`. Install and sign into coding-agent CLIs separately. An existing Herdr installation must be version **0.9.3 or newer**.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/ariel-ps/herdr-setup/main/install.sh | sh
 ```
 
-From a downloaded or cloned copy, run `./install.sh`.
+Setup preserves existing Herdr settings and backs up files it changes. Bash and Zsh are supported; you do not need to switch shells.
 
 <details>
-<summary>If GitHub requires authentication</summary>
+<summary>Install from a clone or use GitHub authentication</summary>
 
-Sign in with `gh auth login`, then run:
+From a cloned or downloaded copy, run `./install.sh`.
+
+If GitHub requires authentication, sign in with `gh auth login` or provide `GH_TOKEN`. To download the installer with your GitHub login:
 
 ```sh
 gh api -H 'Accept: application/vnd.github.raw+json' \
@@ -45,18 +50,45 @@ gh api -H 'Accept: application/vnd.github.raw+json' \
 
 </details>
 
-For plugin downloads that require authentication, sign in with `gh auth login` or set `GH_TOKEN` before installing.
+## First use
 
-Open a new terminal, then launch `herdr`. Pane colors are prepared during installation.
+Open a **new terminal** after installation, then launch:
 
-Manage sounds with `herdr-sound`: `play` tests the included tone, `list` shows available sounds, and `download mario` downloads a pack. Then run `herdr-sound play 1up` or `herdr-sound set done 1up`. Use `disable`/`enable` to mute or enable automatic alerts, and `status` to check settings. [All sound commands](https://github.com/ariel-ps/herdr-alerts#commands).
+```sh
+herdr
+```
+
+New panes receive their colors automatically. If Herdr is already running, reload its configuration through the menu.
+
+Test the bundled alert tone without downloading a sound pack:
+
+```sh
+herdr-sound play
+```
+
+| Sound command | What it does |
+| --- | --- |
+| `herdr-sound status` | Show alert settings and playback dependencies |
+| `herdr-sound list` | List sound choices |
+| `herdr-sound download mario` | Download the optional Mario pack |
+| `herdr-sound set done 1up` | Use the downloaded `1up` sound for completed agents |
+| `herdr-sound disable` | Mute automatic sound alerts |
+| `herdr-sound enable` | Enable automatic sound alerts |
+
+[Full sound guide](https://github.com/ariel-ps/herdr-alerts#commands)
 
 ## Customize
 
-Edit [`dependencies.json`](dependencies.json) and rerun the installer. Set any plugin's `enabled` field to `false` to disable it, or change `ref` to update its version. Open a new terminal after changing enabled plugins.
+Edit [`dependencies.json`](dependencies.json) in your local copy, then rerun `./install.sh`:
+
+- Set a plugin's `enabled` field to `false` to disable it.
+- Change its `ref` to select a different revision.
+- Run `./install.sh --dry-run` to preview your selection before installing.
+
+Open a new terminal after changing enabled plugins. Preview mode requires Python 3.11+ or uv already installed.
 
 [Installation options and paths](docs/installation.md) · [Dependency reference](docs/dependencies.md) · [Development and Docker/VNC testing](CONTRIBUTING.md)
 
 ## License
 
-Original project code is licensed under the [MIT License](LICENSE). Third-party code and media retain their own terms; this license does not grant rights to game assets, downloaded themes, or other third-party content.
+Original project code is licensed under the [MIT License](LICENSE). Third-party code, themes, and game media retain their own terms.

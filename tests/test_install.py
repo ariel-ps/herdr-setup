@@ -1,4 +1,6 @@
 import importlib.util
+import io
+import sys
 import json
 import os
 from pathlib import Path
@@ -11,6 +13,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('installer', ROOT / 'src/installer/main.py')
 installer = importlib.util.module_from_spec(spec)
+sys.path.insert(0, str(ROOT / "src/installer"))
 spec.loader.exec_module(installer)
 
 
@@ -68,8 +71,14 @@ class InstallTests(unittest.TestCase):
             self.assertEqual(installer.resolve_ref('owner/repo', 'v1.0'), 'b' * 40)
 
     def test_dry_run_does_not_run_commands(self):
-        with patch.object(installer, 'run', side_effect=AssertionError('unexpected command')):
+        output = io.StringIO()
+        with patch.object(installer, 'run', side_effect=AssertionError('unexpected command')), \
+             patch('sys.stdout', output):
             self.assertEqual(installer.main(['--dry-run']), 0)
+        self.assertIn('Installation plan', output.getvalue())
+        self.assertIn('No changes made.', output.getvalue())
+        self.assertNotIn('Setup complete', output.getvalue())
+        self.assertNotIn('\033[', output.getvalue())
 
     def test_shell_loads_only_enabled_plugins_from_paths_with_spaces(self):
         with tempfile.TemporaryDirectory(prefix='new user ') as temp:
@@ -182,12 +191,15 @@ class InstallTests(unittest.TestCase):
             registry = Path(temp) / 'plugins.json'
             registry.write_text(json.dumps([{'plugin_id': 'dev.ariel.herdr-kit', 'enabled': True, 'plugin_root': temp}]))
             plugin = {'id': 'new', 'repository': 'owner/repo', 'subdir': '', 'commit': 'a' * 40}
-            with patch.object(installer, 'github_environment', return_value={}), \
+            output = io.StringIO()
+            with patch('sys.stdout', output), patch.object(installer, 'github_environment', return_value={}), \
                  patch.object(installer, 'run', side_effect=OSError('download failed')) as run:
                 with self.assertRaises(OSError):
                     installer.install_plugins({'plugins': [plugin]}, registry)
                 self.assertEqual(run.call_count, 1)
                 self.assertEqual(run.call_args.args[:3], ('herdr', 'plugin', 'install'))
+            self.assertIn('[1/1]  new - installing', output.getvalue())
+            self.assertNotIn('OK', output.getvalue())
 
     def test_plugin_local_changes_stop_reinstallation(self):
         with tempfile.TemporaryDirectory() as temp:

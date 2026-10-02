@@ -23,6 +23,11 @@ Your terminal application and coding-agent CLIs are installed separately. The Li
 
 `--dry-run` and `--help` skip bootstrapping and require Python 3.11+ or uv already available.
 
+Installation shows four stages: dependencies, Herdr, plugins, and configuration.
+Plugin progress and the final next steps appear alongside package-manager and
+build output. Status colors are enabled only in an interactive terminal; set
+`NO_COLOR=1` to disable them. Redirected output remains plain text.
+
 The installer detects your login shell from `SHELL` (or your account settings). Bash and zsh are supported. Bash setup loads helpers from `.bashrc` and the first existing login file (`.bash_profile`, `.bash_login`, or `.profile`); if none exists, it creates `.bash_profile`. Zsh remains a runtime dependency for plugin scripts and is installed automatically on Linux. You do not need to switch your shell.
 
 For curl installation, pass options using `| sh -s -- --dry-run`. Set `HERDR_SETUP_REF` on the shell running the installer to select a branch, commit, or release tag; the default is `main`.
@@ -53,7 +58,7 @@ Existing configuration is preserved unless you use `--replace-config`. Backups i
 
 New configurations use your selected shell, the Catppuccin theme, terminal notifications, and Herdr's experimental Kitty graphics support. Existing Herdr settings are preserved, including its pane shell; change `terminal.default_shell` in your Herdr configuration if you want existing installations to use bash. `prefix+up` opens Herdr Plus projects; `prefix+down` opens quick actions.
 
-Run `herdr-themes-build` once to build the palette cache. New panes apply the colors automatically.
+The palette cache is prepared during installation. New panes apply the colors automatically; run `herdr-themes-build` to rebuild it later.
 
 Optional sound and sprite packs are fetched through the Alerts plugin's helpers. Alerts use a bundled tone when the selected sound is unavailable. Doom indicators require their assets and Claude session data.
 
