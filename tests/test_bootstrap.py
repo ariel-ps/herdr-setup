@@ -1,7 +1,9 @@
 import hashlib
 import importlib.util
+import json
 import os
 from pathlib import Path
+from types import SimpleNamespace
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -13,6 +15,22 @@ spec.loader.exec_module(bootstrap)
 
 
 class BootstrapTests(unittest.TestCase):
+    def test_fedora_installs_missing_providers_and_uses_linux_binary(self):
+        manifest = {'packages': {'fedora': ['/usr/bin/curl', 'jq']}, 'tools': {}, 'herdr': {'version': '0.9.3'}}
+        for uid in [0, 1000]:
+            with self.subTest(uid=uid), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                (root / 'dependencies.json').write_text(json.dumps(manifest))
+                with patch.dict(os.environ), patch.object(bootstrap, 'ROOT', root), \
+                     patch.object(bootstrap.platform, 'system', return_value='Linux'), \
+                     patch.object(bootstrap.os, 'geteuid', return_value=uid, create=True), \
+                     patch.object(bootstrap.shutil, 'which', side_effect=lambda name: '/usr/bin/dnf' if name == 'dnf' else None), \
+                     patch.object(bootstrap.subprocess, 'run', side_effect=lambda args, **kw: SimpleNamespace(returncode=0 if args[-1] == '/usr/bin/curl' else 1)), \
+                     patch.object(bootstrap, 'run') as run, patch.object(bootstrap, 'install_herdr') as install:
+                    bootstrap.main()
+                    run.assert_called_once_with(*([] if uid == 0 else ['sudo']), 'dnf', 'install', '-y', '--setopt=install_weak_deps=False', 'jq')
+                    install.assert_called_once_with(manifest['herdr'], 'linux')
+
     def test_missing_herdr_installs_into_new_home_on_both_platforms(self):
         binary = b'#!/bin/sh\necho herdr\n'
         checksum = hashlib.sha256(binary).hexdigest()

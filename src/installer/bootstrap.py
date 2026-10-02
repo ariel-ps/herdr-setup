@@ -43,19 +43,18 @@ def main():
     manifest = json.loads((ROOT / 'dependencies.json').read_text())
     system = {'Darwin': 'macos', 'Linux': 'linux'}.get(platform.system())
     if system is None:
-        raise SystemExit('Supported platforms: macOS, Ubuntu/Debian Linux.')
+        raise SystemExit('Supported platforms: macOS, Ubuntu/Debian, Fedora.')
     os.environ['PATH'] = str(Path.home() / '.local/bin') + ':' + str(Path.home() / '.cargo/bin') + ':' + os.environ['PATH']
-    packages = manifest['packages'][system]
     if system == 'macos':
+        packages = manifest['packages']['macos']
         if not shutil.which('brew'):
             raise SystemExit('Install Homebrew from https://brew.sh, then rerun ./install.sh.')
         installed = set(subprocess.check_output(['brew', 'list', '--formula', '-1'], text=True).split())
         missing = [p for p in packages if p not in installed]
         if missing:
             run('brew', 'install', *missing)
-    else:
-        if not shutil.which('apt-get'):
-            raise SystemExit('Automatic Linux dependencies currently support Ubuntu/Debian (apt-get).')
+    elif shutil.which('apt-get'):
+        packages = manifest['packages']['linux']
         root_command = [] if os.geteuid() == 0 else ['sudo']
         missing = []
         for package in packages:
@@ -65,6 +64,15 @@ def main():
         if missing:
             run(*root_command, 'apt-get', 'update')
             run(*root_command, 'env', 'DEBIAN_FRONTEND=noninteractive', 'apt-get', 'install', '-y', '--no-install-recommends', *missing)
+    elif shutil.which('dnf'):
+        root_command = [] if os.geteuid() == 0 else ['sudo']
+        missing = [package for package in manifest['packages']['fedora']
+                   if subprocess.run(['rpm', '-q', '--whatprovides', package],
+                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode]
+        if missing:
+            run(*root_command, 'dnf', 'install', '-y', '--setopt=install_weak_deps=False', *missing)
+    else:
+        raise SystemExit('Automatic Linux dependencies require apt-get (Ubuntu/Debian) or dnf (Fedora).')
     for name, tool in manifest.get('tools', {}).items():
         if shutil.which(tool['check']):
             continue

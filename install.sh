@@ -73,11 +73,15 @@ herdr_setup_main() {
                     command -v brew >/dev/null 2>&1 || { echo 'Install Homebrew from https://brew.sh first.' >&2; return 1; }
                     brew install python ;;
                 Linux)
-                    command -v apt-get >/dev/null 2>&1 || { echo 'Automatic Linux bootstrap needs Ubuntu/Debian.' >&2; return 1; }
-                    if [ "$(id -u)" -eq 0 ]; then
-                        apt-get update && apt-get install -y python3
+                    setup_sudo=''
+                    [ "$(id -u)" -eq 0 ] || setup_sudo=sudo
+                    if command -v apt-get >/dev/null 2>&1; then
+                        $setup_sudo apt-get update && $setup_sudo apt-get install -y python3
+                    elif command -v dnf >/dev/null 2>&1; then
+                        $setup_sudo dnf install -y python3
                     else
-                        sudo apt-get update && sudo apt-get install -y python3
+                        echo 'Automatic Linux bootstrap needs apt-get or dnf.' >&2
+                        return 1
                     fi ;;
                 *) echo 'Unsupported OS.' >&2; return 1 ;;
             esac

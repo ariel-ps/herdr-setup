@@ -6,6 +6,7 @@ Edit [`dependencies.json`](../dependencies.json), then run `./install.sh`.
 | --- | --- |
 | `packages.macos` | Homebrew formulae |
 | `packages.linux` | Ubuntu/Debian packages |
+| `packages.fedora` | Fedora packages or file providers, installed through dnf |
 | `tools` | Official installation scripts for tools missing from PATH |
 | `herdr.version` | Herdr release to install when it is missing |
 | `herdr.downloads` | SHA256 verification by OS and architecture |
@@ -27,6 +28,8 @@ A plugin entry:
 `ref` may be a release tag, branch, or full commit hash. Tags and branches are resolved to a commit before installation. To update a plugin, change `ref` and rerun the installer. Add an entry to install another plugin. Set `enabled` to `false` to disable it; deleting an entry simply stops managing it and does not uninstall anything.
 
 To add a system prerequisite, append its name to the appropriate `packages` list. Package managers use available repository versions; plugin build scripts may download additional upstream assets.
+
+Fedora entries such as `/usr/bin/curl` and `/usr/bin/ffplay` let dnf choose the package providing that executable, while keeping a compatible installed provider.
 
 Every plugin is fetched from its repository at the selected revision. This repository contains the installer and defaults, not plugin source. Colors, Alerts, Layouts, Sessions, Doomface, and Sidebar Menu can each be enabled independently.
 

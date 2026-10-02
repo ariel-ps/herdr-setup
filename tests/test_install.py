@@ -116,9 +116,6 @@ class InstallTests(unittest.TestCase):
             (root / 'dependencies.json').write_text(json.dumps({
                 'schema_version': 2, 'plugins': [], 'packages': {}, 'herdr': {'version': '0.9.3'}}))
             (root / '.zshrc').write_text('alias keep=true\n')
-            registry = root / 'preferences/herdr/plugins.json'
-            registry.parent.mkdir(parents=True)
-            registry.write_text('[]')
             env = {'XDG_CONFIG_HOME': str(root / 'preferences'), 'XDG_DATA_HOME': str(root / 'data'),
                    'ZDOTDIR': temp, 'HERDR_CONFIG_PATH': ''}
             with patch.dict(os.environ, env), patch.object(installer, 'ROOT', root), \

@@ -235,7 +235,7 @@ def main(argv=None):
     install_plugins(lock, registry)
     defaults = (ROOT / 'config/herdr.toml').read_text().replace('"@ZSH@"', json.dumps(shutil.which('zsh')))
     configurations = [(config / 'config.toml', defaults)]
-    installed = {p['plugin_id']: p for p in json.loads(registry.read_text())}
+    installed = {p['plugin_id']: p for p in json.loads(registry.read_text())} if registry.exists() else {}
     legacy_config = config / 'plugins/config/dev.ariel.herdr-kit/config.sh'
     for item in lock['plugins']:
         if item.get('enabled', True) and item.get('config'):

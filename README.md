@@ -2,7 +2,7 @@
 
 **Install Herdr with plugins to manage several coding agents side by side in your terminal.**
 
-Give each pane its own color, get an alert when an agent needs attention, and save layouts to use again. The installer sets up Herdr and your selected plugins on macOS or Ubuntu/Debian Linux.
+Give each pane its own color, get an alert when an agent needs attention, and save layouts to use again. Works on macOS, Ubuntu/Debian, and Fedora.
 
 You don't need Herdr installed already. Existing settings are preserved.
 
@@ -20,6 +20,7 @@ Each feature is a separate plugin. Also includes Herdr Plus, Board, Grid, Sideba
 
 - **macOS:** Homebrew and its command-line build tools.
 - **Ubuntu/Debian:** `apt-get` and `sudo` or root access.
+- **Fedora:** `dnf` and `sudo` or root access.
 - A terminal, internet access, and `curl`/`tar` for the command below.
 
 Apple Silicon/ARM64 and Intel/x86-64 are supported. Herdr and build dependencies are installed automatically. Install and sign into your coding-agent CLIs separately.

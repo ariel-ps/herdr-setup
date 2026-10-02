@@ -4,7 +4,7 @@ The installer creates its own directories under your home. No existing project l
 
 ## Requirements
 
-On macOS, Homebrew must be available as `brew`. On Ubuntu/Debian, the installer uses `apt-get` with root or sudo privileges. Other Linux package managers are not automated.
+On macOS, Homebrew must be available as `brew`. Linux installation uses `apt-get` on Ubuntu/Debian or `dnf` on Fedora, with root or sudo privileges.
 
 The curl method needs a POSIX shell, `curl`, `tar`, and CA certificates. A minimal Linux image may need these installed first. You also need a writable home directory and network access to package repositories and plugin build dependencies.
 
