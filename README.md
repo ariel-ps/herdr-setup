@@ -49,6 +49,8 @@ For plugin downloads that require authentication, sign in with `gh auth login` o
 
 Open a new terminal, run `herdr-themes-build` once to create the pane colors, then launch `herdr`.
 
+Run `alert8play` to test the alert sound, or `alert8play --list` to see named sounds. Game sounds need an optional pack: `herdr-sounds-sync mario`, then `alert8play 1up`.
+
 ## Customize
 
 Edit [`dependencies.json`](dependencies.json) and rerun the installer. Set any plugin's `enabled` field to `false` to disable it, or change `ref` to update its version. Open a new terminal after changing enabled plugins.
