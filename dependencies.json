@@ -56,6 +56,61 @@
       "subdir": "herdr-plugin",
       "ref": "4c37066111067d7f56759038982f701d7832ba0f",
       "enabled": true
+    },
+    {
+      "id": "dev.ariel.herdr-colors",
+      "name": "Herdr Colors",
+      "repository": "ariel-ps/herdr-colors",
+      "subdir": "",
+      "ref": "5aa43fb434dfe431799afebd5022e1254c370b66",
+      "enabled": true,
+      "shell": "shell.zsh"
+    },
+    {
+      "id": "dev.ariel.herdr-alerts",
+      "name": "Herdr Alerts",
+      "repository": "ariel-ps/herdr-alerts",
+      "subdir": "",
+      "ref": "80b3425bbdd44b930eeb6a40dd8b649ccf8ea9a1",
+      "enabled": true,
+      "shell": "shell.zsh",
+      "config": "config.sh"
+    },
+    {
+      "id": "dev.ariel.herdr-layouts",
+      "name": "Herdr Layouts",
+      "repository": "ariel-ps/herdr-layouts",
+      "subdir": "",
+      "ref": "d2fe36bd5711f72c433454e281d8a890b560f11b",
+      "enabled": true,
+      "shell": "shell.zsh"
+    },
+    {
+      "id": "dev.ariel.herdr-sessions",
+      "name": "Herdr Sessions",
+      "repository": "ariel-ps/herdr-sessions",
+      "subdir": "",
+      "ref": "19806aebcd19a12e1a012f66cf5f151217de408e",
+      "enabled": true,
+      "shell": "shell.zsh",
+      "config": "config.sh"
+    },
+    {
+      "id": "dev.ariel.herdr-doomface",
+      "name": "Herdr Doomface",
+      "repository": "ariel-ps/herdr-doomface",
+      "subdir": "",
+      "ref": "439a78caabb952000794a6ccc4b8f66f1131f223",
+      "enabled": true,
+      "config": "config.sh"
+    },
+    {
+      "id": "dev.ariel.herdr-sidebar-menu",
+      "name": "Herdr Sidebar Menu",
+      "repository": "ariel-ps/herdr-sidebar-menu",
+      "subdir": "",
+      "ref": "34fe86f58f12d5172df96872681164530904ec52",
+      "enabled": true
     }
   ],
   "packages": {

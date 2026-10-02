@@ -28,8 +28,9 @@ For curl installation, pass options using `| sh -s -- --dry-run`. Set `HERDR_SET
 
 | Files | Default | Override |
 | --- | --- | --- |
-| Toolkit and backups | `~/.local/share/herdr-setup` | `XDG_DATA_HOME` |
+| Shell loader and backups | `~/.local/share/herdr-setup` | `XDG_DATA_HOME` |
 | Herdr configuration | `~/.config/herdr` | `XDG_CONFIG_HOME` |
+| Installed plugins | `~/.config/herdr/plugins` | `XDG_CONFIG_HOME` |
 | Cached media | `~/.cache/herdr-kit` | `XDG_CACHE_HOME` |
 | Shell integration | `~/.zshrc` | `ZDOTDIR` |
 | Herdr binary, if missing | `~/.local/bin/herdr` | Existing compatible binary on `PATH` |
@@ -50,4 +51,10 @@ New configurations use zsh, the Catppuccin theme, terminal notifications, and He
 
 Run `herdr-themes-build` once to build the palette cache. New panes apply the colors automatically.
 
-Optional sound and sprite packs are fetched through the toolkit's helpers. Alerts use a bundled tone when the selected sound is unavailable. Doom indicators require their assets and Claude session data.
+Optional sound and sprite packs are fetched through the Alerts plugin's helpers. Alerts use a bundled tone when the selected sound is unavailable. Doom indicators require their assets and Claude session data.
+
+## Upgrading from Herdr Kit
+
+The installer replaces the combined Herdr Kit with independently selectable plugins. After successful installation, it stops the old Doom overlays and disables the old plugin to avoid duplicate hooks. Existing `config.sh` settings are copied into each new hook plugin's configuration directory when it has no settings yet. The old files remain available, and the plugin registry is backed up.
+
+Open a new zsh to load only the enabled plugins' helpers. Disabling Doomface stops its overlay within the polling interval; close any standalone Doom widget panes separately.

@@ -1,7 +1,8 @@
 import importlib.util
 import json
+import os
 from pathlib import Path
-import shutil
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -62,24 +63,82 @@ class InstallTests(unittest.TestCase):
 
     def test_annotated_release_tag_resolves_to_commit(self):
         output = 'a' * 40 + '\trefs/tags/v1.0\n' + 'b' * 40 + '\trefs/tags/v1.0^{}'
-        with patch.object(installer, 'run', return_value=output):
+        with patch.object(installer, 'run', return_value=output), patch.object(installer, 'github_environment', return_value={}):
             self.assertEqual(installer.resolve_ref('owner/repo', 'v1.0'), 'b' * 40)
 
     def test_dry_run_does_not_run_commands(self):
         with patch.object(installer, 'run', side_effect=AssertionError('unexpected command')):
             self.assertEqual(installer.main(['--dry-run']), 0)
 
-    def test_kit_installs_under_arbitrary_data_directory(self):
+    def test_shell_loads_only_enabled_plugins_from_paths_with_spaces(self):
         with tempfile.TemporaryDirectory(prefix='new user ') as temp:
-            data = Path(temp) / 'custom data'
-            with tempfile.TemporaryDirectory() as source, patch.object(installer, 'ROOT', Path(source)):
-                shutil.copytree(ROOT / 'src/herdr-kit', Path(source) / 'src/herdr-kit')
-                destination = installer.kit_destination(data)
-                installer.install_kit(destination)
-            # Runtime files remain usable after the downloaded source is removed.
-            self.assertTrue((destination / 'setup.zsh').is_file())
-            self.assertEqual(installer.install_kit(destination), destination)
-            self.assertTrue(destination.is_relative_to(data))
+            root = Path(temp)
+            (root / 'shell.zsh').write_text('selected-feature() { print loaded; }\n')
+            registry = root / 'plugins.json'
+            loader = root / 'loader.zsh'
+            loader.write_text(installer.shell_loader({'plugins': [{'id': 'example', 'shell': 'shell.zsh'}]}, registry))
+            for enabled in [True, False]:
+                registry.write_text(json.dumps([{'plugin_id': 'example', 'plugin_root': temp, 'enabled': enabled}]))
+                result = subprocess.run(['zsh', '-fc', 'source "$1"; whence selected-feature', 'check', str(loader)],
+                                        text=True, capture_output=True)
+                self.assertEqual(result.returncode == 0, enabled, result.stderr)
+
+    def test_github_credentials_are_scoped_without_changing_parent_environment(self):
+        with patch.dict(os.environ, {'GH_TOKEN': 'test-token', 'GIT_CONFIG_COUNT': '1',
+                                    'GIT_CONFIG_KEY_0': 'color.ui', 'GIT_CONFIG_VALUE_0': 'false'}, clear=True):
+            env = installer.github_environment()
+            self.assertEqual(env['GIT_CONFIG_COUNT'], '2')
+            self.assertEqual(env['GIT_CONFIG_KEY_1'], 'http.https://github.com/.extraheader')
+            self.assertEqual(env['GIT_CONFIG_VALUE_0'], 'false')
+            self.assertNotIn('GIT_CONFIG_VALUE_1', os.environ)
+
+    def test_legacy_plugin_is_disabled_after_successful_install(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / 'doomface-hook.sh').touch()
+            registry = root / 'plugins.json'
+            registry.write_text(json.dumps([{'plugin_id': 'dev.ariel.herdr-kit', 'enabled': True, 'plugin_root': temp}]))
+            with patch.object(installer, 'run') as run:
+                installer.install_plugins({'plugins': []}, registry)
+                self.assertEqual(run.call_args_list[-1].args, ('herdr', 'plugin', 'disable', 'dev.ariel.herdr-kit'))
+
+    def test_plugin_paths_cannot_escape_the_checkout(self):
+        for field in ['shell', 'config', 'subdir']:
+            with self.assertRaisesRegex(ValueError, 'path'):
+                installer.validate_manifest({'schema_version': 2, 'plugins': [
+                    {'id': 'example', 'repository': 'owner/repo', field: '../outside'}]})
+
+    def test_no_shell_installs_loader_without_editing_shell_settings(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / 'config').mkdir()
+            (root / 'config/herdr.toml').write_text((ROOT / 'config/herdr.toml').read_text())
+            (root / 'dependencies.json').write_text(json.dumps({
+                'schema_version': 2, 'plugins': [], 'packages': {}, 'herdr': {'version': '0.9.3'}}))
+            (root / '.zshrc').write_text('alias keep=true\n')
+            registry = root / 'preferences/herdr/plugins.json'
+            registry.parent.mkdir(parents=True)
+            registry.write_text('[]')
+            env = {'XDG_CONFIG_HOME': str(root / 'preferences'), 'XDG_DATA_HOME': str(root / 'data'),
+                   'ZDOTDIR': temp, 'HERDR_CONFIG_PATH': ''}
+            with patch.dict(os.environ, env), patch.object(installer, 'ROOT', root), \
+                 patch.object(installer.shutil, 'which', return_value='/usr/bin/zsh'), \
+                 patch.object(installer, 'run', return_value='herdr 0.9.3'):
+                self.assertEqual(installer.main(['--no-shell']), 0)
+            self.assertEqual((root / '.zshrc').read_text(), 'alias keep=true\n')
+            self.assertTrue((root / 'data/herdr-setup/shell.zsh').is_file())
+
+    def test_failed_install_keeps_legacy_plugin_enabled(self):
+        with tempfile.TemporaryDirectory() as temp:
+            registry = Path(temp) / 'plugins.json'
+            registry.write_text(json.dumps([{'plugin_id': 'dev.ariel.herdr-kit', 'enabled': True, 'plugin_root': temp}]))
+            plugin = {'id': 'new', 'repository': 'owner/repo', 'subdir': '', 'commit': 'a' * 40}
+            with patch.object(installer, 'github_environment', return_value={}), \
+                 patch.object(installer, 'run', side_effect=OSError('download failed')) as run:
+                with self.assertRaises(OSError):
+                    installer.install_plugins({'plugins': [plugin]}, registry)
+                self.assertEqual(run.call_count, 1)
+                self.assertEqual(run.call_args.args[:3], ('herdr', 'plugin', 'install'))
 
     def test_plugin_local_changes_stop_reinstallation(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -88,7 +147,7 @@ class InstallTests(unittest.TestCase):
             registry.write_text(json.dumps([{'plugin_id': 'example', 'source': {'managed_path': temp}}]))
             with patch.object(installer, 'run', return_value=' M user-file') as run:
                 with self.assertRaisesRegex(ValueError, 'local changes'):
-                    installer.install_plugins({'plugins': [{'id': 'example'}]}, registry, root)
+                    installer.install_plugins({'plugins': [{'id': 'example'}]}, registry)
                 run.assert_called_once_with('git', 'status', '--porcelain', cwd=temp, capture=True)
 
 

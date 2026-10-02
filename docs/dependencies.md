@@ -9,7 +9,7 @@ Edit [`dependencies.json`](../dependencies.json), then run `./install.sh`.
 | `tools` | Official installation scripts for tools missing from PATH |
 | `herdr.version` | Herdr release to install when it is missing |
 | `herdr.downloads` | SHA256 verification by OS and architecture |
-| `plugins` | Optional community plugins |
+| `plugins` | All selected plugins, each installed from its own repository |
 
 A plugin entry:
 
@@ -28,6 +28,10 @@ A plugin entry:
 
 To add a system prerequisite, append its name to the appropriate `packages` list. Package managers use available repository versions; plugin build scripts may download additional upstream assets.
 
-The bundled toolkit lives in `src/herdr-kit` and is maintained directly.
+Every plugin is fetched from its repository at the selected revision. This repository contains the installer and defaults, not plugin source. Colors, Alerts, Layouts, Sessions, Doomface, and Sidebar Menu can each be enabled independently.
+
+Optional entry fields: `shell` names the plugin's zsh integration file; `config` names its default configuration file. Both are paths relative to the plugin root. Shell integration checks Herdr's enabled-plugin registry whenever a new zsh starts.
+
+For repositories requiring authentication, sign in with `gh auth login` or provide `GH_TOKEN`/`GITHUB_TOKEN`. Credentials are passed to Git for the download without changing global Git configuration.
 
 The tiny bootstrap step installs Python if it is missing so the installer can read JSON. Herdr is downloaded for the detected OS/architecture and its checksum is verified before installation. A pre-existing Herdr installation is kept and checked for compatibility; upgrading an incompatible existing version remains the user's package-manager operation.

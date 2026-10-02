@@ -6,10 +6,9 @@ Run checks with Python 3.11+:
 python3 -m unittest discover -s tests -v
 ./install.sh --dry-run
 shellcheck install.sh tests/desktop/*.sh
-zsh -n src/herdr-kit/setup.zsh
 ```
 
-Dependency changes belong in `dependencies.json`. Toolkit changes belong in `src/herdr-kit`. Keep runtime files independent of the repository's checkout location and use HOME/XDG paths rather than a contributor's directory layout.
+Dependency changes belong in `dependencies.json`. Plugin changes belong in their individual repositories; update the corresponding `ref` after pushing a change. Keep runtime files independent of checkout locations and use HOME/XDG paths.
 
 ## Clean Linux desktop
 
@@ -20,7 +19,13 @@ With Docker and Docker Compose available:
 ./tests/desktop/run.sh install
 ```
 
-Open http://localhost:6080/vnc.html?autoconnect=true&resize=scale for the desktop. The base image provides a desktop and graphical terminal, but no Herdr, plugins, Rust, Go, uv, or jq. The normal installer must supply its prerequisites. No GitHub credential is provided to the container.
+Open http://localhost:6080/vnc.html?autoconnect=true&resize=scale for the desktop. The base image provides a desktop and graphical terminal, but no Herdr, plugins, Rust, Go, uv, or jq. The normal installer must supply its prerequisites.
+
+For authenticated plugin downloads, pass a token only to the installation command:
+
+```sh
+GH_TOKEN="$(gh auth token)" ./tests/desktop/run.sh install
+```
 
 ```sh
 ./tests/desktop/run.sh shell    # Inspect the test machine
@@ -32,4 +37,4 @@ Set `HERDR_TEST_DOCKER_CONTEXT` to use a particular Docker context. The reposito
 
 noVNC does not forward audio to the browser. Test audio playback separately on a real desktop. Agent login and model calls are also separate from installation tests.
 
-The installer has been exercised on Ubuntu 24.04 ARM64 without Herdr or GitHub credentials, including custom XDG/ZDOTDIR locations containing spaces, a second installation, and a live Herdr launch. macOS download selection and fresh-home behavior have automated coverage; a fresh macOS machine installation has not been run. Individual plugins may show their own first-run preferences, such as the sidebar's optional Nerd Font prompt.
+The installer has been exercised on Ubuntu 24.04 ARM64, including installation without pre-existing Herdr, custom XDG/ZDOTDIR locations containing spaces, a second installation, and a live Herdr launch. The plugin split was tested with authenticated GitHub downloads, settings migration, and independent enable/disable behavior. macOS download selection and fresh-home behavior have automated coverage; a fresh macOS machine installation has not been run. Individual plugins may show their own first-run preferences, such as the sidebar's optional Nerd Font prompt.

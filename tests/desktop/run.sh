@@ -14,7 +14,7 @@ case "${1:-start}" in
     echo 'Next: ./tests/desktop/run.sh install' ;;
   install)
     # shellcheck disable=SC2016
-    "${docker_cmd[@]}" exec -T desktop bash -o pipefail -c \
+    "${docker_cmd[@]}" exec -T -e GH_TOKEN -e GITHUB_TOKEN desktop bash -o pipefail -c \
       'cd /opt/herdr-setup; ./install.sh 2>&1 | tee "$HOME/test-results/install.log"' ;;
   shell) "${docker_cmd[@]}" exec desktop bash ;;
   reset)
