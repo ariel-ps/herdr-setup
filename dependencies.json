@@ -72,7 +72,7 @@
       "name": "Herdr Alerts",
       "repository": "ariel-ps/herdr-alerts",
       "subdir": "",
-      "ref": "9718db4a76bd8cacb72445ba29886bae10646b20",
+      "ref": "7604c97827d8fcda07d98bb7f4eaa6c972a2ca0a",
       "enabled": true,
       "shell": "shell.zsh",
       "shell_bash": "shell.bash",
@@ -144,6 +144,7 @@
       "netcat-openbsd",
       "procps",
       "util-linux",
+      "ncurses-bin",
       "bsdextrautils",
       "file"
     ],
@@ -171,6 +172,7 @@
       "nmap-ncat",
       "procps-ng",
       "util-linux",
+      "ncurses",
       "file"
     ]
   },
