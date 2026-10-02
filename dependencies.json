@@ -62,7 +62,7 @@
       "name": "Herdr Colors",
       "repository": "ariel-ps/herdr-colors",
       "subdir": "",
-      "ref": "06556c8322cbb8aa18889d1a40c986e8d94e91cc",
+      "ref": "0b772fef688f13394013383a2a96ce7663767e2b",
       "enabled": true,
       "shell": "shell.zsh",
       "shell_bash": "shell.bash"
@@ -72,7 +72,7 @@
       "name": "Herdr Alerts",
       "repository": "ariel-ps/herdr-alerts",
       "subdir": "",
-      "ref": "4b569bd66235f7e7b1815363921f1307b4f2ecce",
+      "ref": "a55bb4bff4c3de282670c569d29a3b29b0c537da",
       "enabled": true,
       "shell": "shell.zsh",
       "shell_bash": "shell.bash",
