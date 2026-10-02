@@ -1,5 +1,9 @@
 onboarding = false
 
+[terminal]
+# The installer resolves this executable on the target machine.
+default_shell = "@ZSH@"
+
 [theme]
 name = "catppuccin"
 auto_switch = false

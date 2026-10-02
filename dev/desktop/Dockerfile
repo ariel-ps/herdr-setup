@@ -12,12 +12,11 @@ RUN useradd --create-home --uid 1000 --shell /bin/bash tester \
     && printf 'tester ALL=(ALL) NOPASSWD:ALL\n' > /etc/sudoers.d/tester \
     && chmod 0440 /etc/sudoers.d/tester
 COPY desktop.sh /usr/local/bin/desktop
-COPY github-askpass.sh /usr/local/bin/github-askpass
-RUN chmod +x /usr/local/bin/desktop /usr/local/bin/github-askpass
+RUN chmod +x /usr/local/bin/desktop
 USER tester
 ENV HOME=/home/tester DISPLAY=:1 TERM=xterm-kitty LIBGL_ALWAYS_SOFTWARE=1
 ENV PATH=/home/tester/.local/bin:/home/tester/.cargo/bin:/usr/local/bin:/usr/bin:/bin
-ENV GIT_ASKPASS=/usr/local/bin/github-askpass GIT_TERMINAL_PROMPT=0
+ENV GIT_TERMINAL_PROMPT=0
 WORKDIR /home/tester
 EXPOSE 6080
 ENTRYPOINT ["/usr/local/bin/desktop"]

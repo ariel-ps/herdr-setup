@@ -1,52 +1,33 @@
-# One dependency list
+# Dependencies
 
-Edit [`dependencies.json`](../dependencies.json), then rerun:
+Edit [`dependencies.json`](../dependencies.json), then run `./install.sh`. There is no separate Brewfile or private source snapshot to maintain.
 
-```sh
-./install.sh
-```
-
-There is no separate Brewfile or hand-maintained package list in the installer.
-
-| Field | What it controls |
+| Field | Purpose |
 | --- | --- |
 | `packages.macos` | Homebrew formulae |
 | `packages.linux` | Ubuntu/Debian packages |
-| `tools` | Tools installed by their official scripts when missing, including Rust and uv |
-| `herdr.version` | Herdr release for a new installation |
-| `herdr.downloads` | SHA256 checksums by operating system and architecture |
-| `sources` | dev-env and herdr-kit source snapshots, with local patches |
-| `plugins` | External Herdr plugins and the Git revisions to install |
+| `tools` | Official installation scripts for tools missing from PATH |
+| `herdr.version` | Herdr release to install when it is missing |
+| `herdr.downloads` | SHA256 verification by OS and architecture |
+| `plugins` | Optional public plugins |
 
-## Add or update a plugin
-
-Each plugin entry looks like this:
+A plugin entry:
 
 ```json
 {
   "id": "cloudmanic.herdr-plus",
   "name": "Herdr Plus",
-  "version": "0.1.24",
   "repository": "cloudmanic/herdr-plus",
   "subdir": "",
-  "ref": "v0.1.24"
+  "ref": "v0.1.24",
+  "enabled": true
 }
 ```
 
-`ref` is the installation source of truth: use a release tag, branch, or full commit SHA. A tag is resolved to its commit before installation. `version` is descriptive only; change `ref` to actually update a plugin. The initial snapshot uses exact commit hashes.
+`ref` may be a release tag, branch, or full commit hash. Tags and branches are resolved to a commit before installation. To update a plugin, change `ref` and rerun the installer. Add an entry to install another plugin. Set `enabled` to `false` to disable it; deleting an entry simply stops managing it and does not uninstall anything.
 
-Add an entry to install a new plugin. Removing an entry stops managing that plugin; it does not uninstall an existing copy. Modified plugin checkouts cause installation to stop so local work is preserved.
+To add a system prerequisite, append its name to the appropriate `packages` list. Package managers use available repository versions; plugin build scripts may download additional upstream assets.
 
-## Add a prerequisite
+The bundled toolkit lives in `src/herdr-kit` and is maintained directly. It needs no private GitHub repository, base commit, or patch metadata.
 
-Append the appropriate package name to `packages.macos` and/or `packages.linux`. Rerun the installer. Package-manager packages use the available repository version; this manifest pins Herdr and plugin source revisions, not every transitive operating-system package.
-
-## Source snapshots
-
-The source entries include a published base commit, a patch of local changes, a patch checksum, and the resulting Git tree hash. Those hashes verify the captured snapshot. Updating a base commit while retaining the patch requires regenerating and checking the patch/tree metadata; ordinary package and plugin edits do not.
-
-## Scope
-
-The prerequisites cover Herdr, the kit, and plugin builds. `--profile full` also loads personal dev-env integrations for other tools (cloud CLIs, corporate services, VMs); those tools and credentials are configured separately. The default `essentials` profile loads the agent and terminal helpers.
-
-Python is the small bootstrap prerequisite used to read JSON. When absent, the launcher installs it through the platform package manager. Linux automatic dependency installation supports Ubuntu/Debian; other distributions need a package-manager adapter.
+The tiny bootstrap step installs Python if it is missing so the installer can read JSON. Herdr is downloaded for the detected OS/architecture and its checksum is verified before installation. A pre-existing Herdr installation is kept and checked for compatibility; upgrading an incompatible existing version remains the user's package-manager operation.

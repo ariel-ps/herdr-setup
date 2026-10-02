@@ -1,0 +1,21 @@
+{
+  "root": {
+    "type": "split",
+    "direction": "right",
+    "ratio": 0.5,
+    "first": {
+      "type": "split",
+      "direction": "down",
+      "ratio": 0.5,
+      "first": {"type": "pane", "label": "implement"},
+      "second": {"type": "pane", "label": "test"}
+    },
+    "second": {
+      "type": "split",
+      "direction": "down",
+      "ratio": 0.5,
+      "first": {"type": "pane", "label": "review"},
+      "second": {"type": "pane", "label": "terminal"}
+    }
+  }
+}

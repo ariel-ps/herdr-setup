@@ -6,30 +6,33 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-spec = importlib.util.spec_from_file_location('installer', ROOT / 'scripts/install.py')
+spec = importlib.util.spec_from_file_location('installer', ROOT / 'src/installer/main.py')
 installer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(installer)
 
 
 class InstallTests(unittest.TestCase):
-    def test_manifest_and_patch_integrity(self):
-        installer.validate_lock(json.loads((ROOT / 'dependencies.json').read_text()))
+    def test_manifest_has_only_public_plugin_dependencies(self):
+        manifest = json.loads((ROOT / 'dependencies.json').read_text())
+        installer.validate_manifest(manifest)
+        self.assertNotIn('sources', manifest)
 
     def test_shell_install_preserves_settings_and_is_repeatable(self):
         original = 'export EDITOR=vim\nalias ll="ls -l"\n'
-        added = installer.shell_block(original)
+        loader = Path('/home/a user/.local/share/herdr-setup/kit/setup.zsh')
+        added = installer.shell_block(original, loader)
         self.assertTrue(added.startswith(original))
-        self.assertEqual(installer.shell_block(added), added)
+        self.assertEqual(installer.shell_block(added, loader), added)
         self.assertEqual(added.count(installer.BEGIN), 1)
 
     def test_existing_manual_loader_is_not_duplicated(self):
         with self.assertRaisesRegex(ValueError, 'manual'):
-            installer.shell_block('source ~/Documents/projects/dev-env/init.zsh\n')
+            installer.shell_block('source ~/custom/herdr-kit/shell/herdr.sh\n', Path('/tmp/kit/setup.zsh'))
 
     def test_malformed_shell_block_is_not_overwritten(self):
         for content in [installer.BEGIN, installer.END + '\n' + installer.BEGIN]:
             with self.assertRaises(ValueError):
-                installer.shell_block(content)
+                installer.shell_block(content, Path('/tmp/kit/setup.zsh'))
 
     def test_existing_configuration_backed_up_once(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -64,6 +67,15 @@ class InstallTests(unittest.TestCase):
     def test_dry_run_does_not_run_commands(self):
         with patch.object(installer, 'run', side_effect=AssertionError('unexpected command')):
             self.assertEqual(installer.main(['--dry-run']), 0)
+
+    def test_kit_installs_under_arbitrary_data_directory(self):
+        with tempfile.TemporaryDirectory(prefix='new user ') as temp:
+            data = Path(temp) / 'custom data'
+            destination = installer.kit_destination(data)
+            installer.install_kit(destination)
+            self.assertTrue((destination / 'setup.zsh').is_file())
+            self.assertEqual(installer.install_kit(destination), destination)
+            self.assertTrue(destination.is_relative_to(data))
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Bootstrap only the JSON reader; application dependencies live in dependencies.json.
 set -eu
-setup_root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
+setup_root=$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd)
 if ! command -v python3 >/dev/null 2>&1; then
     case "$(uname -s)" in
       Darwin)
@@ -17,4 +17,4 @@ if ! command -v python3 >/dev/null 2>&1; then
       *) echo 'Unsupported OS.' >&2; exit 1 ;;
     esac
 fi
-exec python3 "$setup_root/scripts/bootstrap.py"
+exec python3 "$setup_root/src/installer/bootstrap.py"

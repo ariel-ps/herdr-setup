@@ -1,88 +1,92 @@
-# Ariel's Herdr setup
+# Herdr Setup
 
-Private, reproducible configuration for Herdr, its plugins, and the dev-env shell helpers used alongside it.
+Install Herdr, pane colors, status alerts, layout helpers, and a configurable selection of community plugins on macOS or Ubuntu/Debian Linux.
 
-**Validation in progress:** the installer supports macOS and Ubuntu/Debian Linux. A clean Ubuntu desktop with browser-accessible VNC is included, and the first complete Linux installation test is running. Use the read-only preview to inspect the plan.
+You do not need an existing Herdr installation or a particular project directory. The installer creates its directories, downloads Herdr when missing, and installs the bundled toolkit. Existing Herdr configuration is preserved by default.
+
+**Private preview:** the repository is still private. Public release and licensing are not finalized. The toolkit has no private source-repository dependencies.
+
+## Install
+
+From a downloaded or cloned copy, run:
 
 ```sh
-git clone https://github.com/ariel-ps/herdr-setup.git
-cd herdr-setup
-./install.sh --dry-run
-# Install dependencies, plugins, configuration, and shell integration:
 ./install.sh
 ```
 
-GitHub access to both `ariel-ps/dev-env` and `prompt-security/herdr-kit` is required. Authenticate Git before installing, for example with `gh auth login` and `gh auth setup-git`.
-
-## Organization
-
-```text
-ariel-ps/herdr-setup          Installation, configuration, dependency snapshots
-ariel-ps/dev-env             General shell helper development
-prompt-security/herdr-kit   Herdr enhancement development
-```
-
-This repository assembles the other two. **[`dependencies.json`](dependencies.json) is the single dependency list**: macOS packages, Linux packages, tool installers, Herdr versions/checksums, source snapshots, and external plugins. Edit that file and rerun `./install.sh`. See [dependency editing examples](docs/dependencies.md).
-
-The source patches preserve the local changes present at capture time, including unpublished Doom face and layout/session helpers, without changing either working repository. The kit snapshot also includes Linux audio and terminal compatibility changes.
-
-```text
-config/                     Theme, sidebar, shortcuts, alert preferences
-shell/setup.zsh             Shell integration
-scripts/install.py          Installer
-patches/                    Captured source changes against pinned commits
-dependencies.json           All application dependencies and plugin revisions
-layouts/                    Portable pane arrangements
-docker/ + compose.yaml      Clean Ubuntu desktop with noVNC
-```
-
-## Captured plugins
-
-| Plugin | Version |
-| --- | --- |
-| Herdr Plus | 0.1.24 |
-| herdr-kit | 0.1.0 plus local source changes |
-| Herdr Board | 0.18.0 |
-| herdr-grid | 0.6.0 |
-| herdr-sidebar | 0.15.0 |
-| memex | 0.19.7 |
-| Plugin Manager | 0.4.0 |
-| Terminal Code | 0.1.1 |
-
-Captured with Herdr 0.9.3. Plugin source commits are pinned; upstream build scripts may still download moving toolchains or external assets.
-
-## Installer behavior under development
-
-- Installs source snapshots into separate, verified checkouts under `~/.local/share/herdr-setup/sources`.
-- Defaults to `--profile essentials` (agent and terminal helpers); `--profile full` loads all personal dev-env profiles.
-- Backs up configuration before replacement, with a restoration manifest under `~/.local/share/herdr-setup/backups`.
-- Adds one managed block to `.zshrc`; `--no-shell` leaves that file alone.
-- Stops when existing manual source lines or modified managed checkouts would conflict.
-
-When migrating an existing `.zshrc`, replace the old `source .../dev-env/init.zsh` and `source .../herdr-kit/shell/herdr.sh` lines and the old standalone `__herdr_apply_pane_theme` call with the managed setup source. Keep unrelated shell settings. Alternatively use `--no-shell` and perform that integration manually.
-
-The snapshot includes tracked dev-env changes and new source files under `scripts/`. It excludes its untracked agent configuration directories, skills lock file, and archive. Credentials, personal `.zshrc`, session databases, transcripts, running panes, and downloaded media are not part of this repository. Media is fetched separately by the kit's helpers.
-
-## Clean Linux installation test
-
-With Docker and Docker Compose running:
+After the repository becomes public, the same entry point supports:
 
 ```sh
-./scripts/test-desktop.sh start
-./scripts/test-desktop.sh auth
-./scripts/test-desktop.sh install
+curl -fsSL https://raw.githubusercontent.com/ariel-ps/herdr-setup/main/install.sh | sh
 ```
 
-Open **http://localhost:6080/vnc.html?autoconnect=true&resize=scale** for the desktop. The image contains a graphical terminal and VNC infrastructure, but no Herdr, plugins, Rust, Go, uv, or jq. The normal installer installs the missing dependencies during the test.
-
-`auth` streams your GitHub CLI credential into a temporary in-memory file in the container, needed for the private source repositories. It is not part of the image, Compose configuration, or Git repository. Your host home directory and Docker socket are not mounted. The setup repository is mounted read-only. The desktop port is bound to localhost only.
+While private, fetch the script through your authenticated GitHub CLI:
 
 ```sh
-./scripts/test-desktop.sh shell    # Inspect the installed Linux environment
-./scripts/test-desktop.sh reset    # Discard it and get a clean desktop
-./scripts/test-desktop.sh stop     # Remove the test container
+gh api -H 'Accept: application/vnd.github.raw+json' \
+  repos/ariel-ps/herdr-setup/contents/install.sh | sh
 ```
 
-To use a specific Docker context, prefix commands with `HERDR_TEST_DOCKER_CONTEXT=<context>`. Installation logs live in the container at `~/test-results/install.log`; copy them out before resetting. noVNC displays the desktop but does not forward sound to your browser. Audio backend checks and listening to alerts on a real desktop are separate checks.
+Authentication is needed to download this private preview, not to install its public dependencies. A local copy can be installed without GitHub credentials.
 
-The Linux installation test is still in progress; a working VNC page alone does not establish that every plugin works.
+The installer handles system packages and toolchains. macOS requires Homebrew; Ubuntu/Debian requires package-installation privileges through root or sudo. Start Herdr using the command printed when installation finishes. New panes use zsh, where the toolkit's helpers are loaded.
+
+## Choose your plugins
+
+Edit **[`dependencies.json`](dependencies.json)** and rerun `./install.sh`. It is the single list of operating-system packages, tool installers, Herdr downloads, and optional plugins.
+
+Set a plugin's `enabled` field to `false` to skip installing it, or disable an existing installation. Change `ref` to select a release tag or commit. See [dependency configuration](docs/dependencies.md).
+
+The default selection includes Herdr Plus, Board, Grid, Sidebar, memex, Plugin Manager, and Terminal Code. The bundled toolkit adds:
+
+- A distinct color for each pane.
+- Flash and sound alerts when an agent is blocked or finishes.
+- Layout save/load and agent grids.
+- Agent names and session helpers.
+- Optional Doom context-usage indicators for Claude panes.
+
+Agent CLIs and their account logins are separate. Optional sound/sprite packs are downloaded by the toolkit's helpers; the default audio fallback is a generated tone.
+
+## Options
+
+```sh
+./install.sh --dry-run          # Show the plan without installing
+./install.sh --no-shell         # Leave .zshrc untouched
+./install.sh --replace-config   # Back up and replace existing defaults
+```
+
+For curl installation, pass options using `| sh -s -- --dry-run`. `HERDR_SETUP_REF` can select a branch, commit, or release tag; it defaults to `main` during the preview.
+
+Paths are based on the current user's home and standard environment variables:
+
+| Files | Default | Override |
+| --- | --- | --- |
+| Toolkit and backups | `~/.local/share/herdr-setup` | `XDG_DATA_HOME` |
+| Herdr configuration | `~/.config/herdr` | `XDG_CONFIG_HOME` |
+| Cached media | `~/.cache/herdr-kit` | `XDG_CACHE_HOME` |
+| Shell integration | `~/.zshrc` | `ZDOTDIR` |
+| Herdr binary, if missing | `~/.local/bin/herdr` | Existing compatible binary on `PATH` |
+
+For example:
+
+```sh
+XDG_DATA_HOME="$HOME/my data" XDG_CONFIG_HOME="$HOME/preferences" ./install.sh
+```
+
+Keep custom XDG variables exported when running Herdr as well. No `Documents/projects` directory or original checkout is needed after installation; the toolkit is copied to its managed location. Backups include a manifest identifying the original file paths.
+
+## Develop and test
+
+```text
+install.sh              Clone and curl installation entry point
+dependencies.json       Editable dependency list
+src/installer/          Installation implementation
+src/herdr-kit/          Bundled enhancement source
+config/                 Default settings
+examples/               Generic layout examples
+tests/                  Automated installer tests
+dev/desktop/            Disposable Ubuntu + VNC test environment
+docs/                   Configuration and development guides
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for checks and the clean desktop test. Docker is for development/testing; customers install the tool directly on their machine.

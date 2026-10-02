@@ -1,0 +1,549 @@
+#!/bin/sh
+# herdr-agents — the fleet's roster, and the only way it has to talk to itself.
+#
+#   herdr-agents                             # the fleet: name, kind, state, pane
+#   herdr-agents send winguard "..."         # type that into winguard, signed
+#   herdr-agents send winguard - --read      # body on stdin, then scrape the reply
+#   herdr-agents read winguard               # what its screen says now
+#   herdr-agents broadcast "..." --yes       # every live agent at once
+#   herdr-agents roles briefs.md --yes       # one brief per agent, addressed
+#
+# This is the herdr port of a kitty-era `agents` CLI, and the port is total
+# rather than cosmetic: that one drove `kitten @ send-text` at a window id, and
+# `kitty @` cannot see a pane herdr owns. herdr holds the pty and multiplexes
+# the whole fleet behind one window, so kitty's roster shows one pane where
+# there are fifteen agents. Every operation here goes through herdr's API
+# instead, and the kitty-shaped parts — socket discovery, bracketed paste, a
+# separate Enter, the hook records that paired a window id to a session — are
+# gone rather than translated. herdr answers the roster question directly.
+#
+# It lives in bin/ and is POSIX sh because its callers are agents shelling out
+# with `sh -c`, which never sourced shell/herdr.sh. Same reason as herdr-whoami.
+#
+# THERE IS NO MESSAGE. `herdr agent prompt` injects text into another agent's
+# input exactly as if the user typed it. Three consequences are built into the
+# shape of this CLI rather than left to the caller to remember:
+#
+#   1. It carries no sender field, so every message is prefixed with who sent
+#      it. There is no flag to turn that off — an unsigned prompt reads to the
+#      recipient as its own user talking, and it will answer accordingly.
+#   2. There is no queue. A message to a pane that is dead, or blocked at an
+#      approval dialog, is not delivered later; it is not delivered. So the
+#      roster is checked first and a blocked target is refused by name, before
+#      herdr refuses it by code.
+#   3. There is no reply channel. `read` scrapes the recipient's screen, and
+#      `send --read` is a send, a wait, and a scrape that happen to be
+#      adjacent — not a request and a response. Named so it cannot be mistaken
+#      for one.
+#
+# NAMING. herdr has three name fields — agent name, pane label, terminal title
+# — each independently settable and routinely disagreeing, so a pane is named
+# here by the same ladder bin/herdr-whoami uses: agent name, then label, then
+# title, then the raw pane id. Deliberately identical, and it has to stay that
+# way: the name you sign a message with is the name the recipient sees you as
+# in its own roster. `herdr-whoami --pane <id>` and this listing disagreeing is
+# a bug in one of them. The name you send *with* comes from this same table,
+# read at $HERDR_PANE_ID, so there is one ladder and not two.
+#
+# ADDRESSING. herdr's own target grammar accepts an agent name or a pane id and
+# nothing else, while this will match you on a label, a title, a prefix or a
+# substring. So whatever matched, the resolved row is handed to herdr as a pane
+# id — the one identifier that is never empty, never ambiguous, and never
+# rewritten by the agent itself mid-session.
+#
+# BROADCAST types into every live agent at once, spending their tokens and
+# possibly changing files under their cwd. It is a separate subcommand so it
+# cannot happen by a typo in `send`, it prints its blast radius before it does
+# anything, and without --yes that print *is* the whole run.
+#
+# Exit: 0 ok, 1 a herdr call failed, 2 usage — including a multi-agent send
+# that was previewed but not confirmed.
+
+set -u
+
+TAB=$(printf '\t')
+LINES_DEFAULT=80
+TIMEOUT_DEFAULT=120000
+SOURCE_DEFAULT=recent-unwrapped
+
+usage() {
+  cat >&2 <<'EOF'
+usage: herdr-agents [ls] [filters] [--json|--names|--long]
+       herdr-agents send <agent> [text|-] [--from <name>] [--wait] [--read] [--dry-run]
+       herdr-agents read <agent> [--lines <n>] [--source <s>] [--raw]
+       herdr-agents broadcast [text|-] [filters] [--yes|--dry-run]
+       herdr-agents roles <file|-> [--yes|--dry-run]
+
+  An agent is addressed by pane id (w1:p6), by its name, or by any unambiguous
+  prefix or substring of one. With no arguments, lists the fleet.
+
+filters (ls, broadcast)
+  --kind <claude|codex|...>  only that agent kind
+  --state <s[,s...]>         only those states: idle done working blocked unknown
+  --match <text>             name or title contains this (case-insensitive)
+  --exclude <text>           name or title does not contain this
+  --cwd <text>               working directory contains this
+
+listing
+  --json                     the merged record per pane, unfiltered fields
+  --names                    bare names, one per line
+  --long                     add session ref, which name field won, and cwd
+
+sending
+  --from <name>              sign as this instead of your own pane's name
+  --wait                     block until the agent settles (idle, done, blocked)
+  --timeout <ms>             give up waiting after this (default 120000)
+  --read                     implies --wait, then read the reply back
+  --lines <n>                lines to scrape when reading (default 80)
+  --dry-run                  print what would be sent, send nothing
+  --yes, -y                  required for any send to more than one agent
+
+reading
+  --source <s>               visible | recent | recent-unwrapped | detection
+  --raw                      keep the TUI chrome instead of stripping it
+
+Every message is signed, because `herdr agent prompt` injects keystrokes and
+carries no sender field. There is no queue and no reply channel: the recipient
+must be alive and unblocked, and its "reply" is whatever its screen says after.
+EOF
+}
+
+die() { printf 'herdr-agents: %s\n' "$1" >&2; exit "${2:-1}"; }
+
+need() { command -v "$1" >/dev/null 2>&1 || die "$1 not found"; }
+
+# ---------------------------------------------------------------- the roster
+
+# Two calls because the identifiers live in two places: `pane list` never
+# carries the agent name and `agent list` never carries the pane label. Same
+# split herdr-whoami works around, for the same reason.
+roster() {
+  _panes=$(herdr pane list 2>/dev/null) || _panes=''
+  case $_panes in
+    *'"panes"'*) ;;
+    *) die "cannot reach the herdr server — check \`herdr status server\`" ;;
+  esac
+  _agents=$(herdr agent list 2>/dev/null) || _agents='{}'
+  printf '%s\n%s\n' "$_panes" "$_agents" | jq -c -s '
+    def clean: if . == null or . == "" then null else . end;
+    ([ (.[1].result.agents // [])[] | {key: .pane_id, value: .} ] | from_entries) as $named
+    | [ (.[0].result.panes // [])[]
+        | . as $p
+        | ($named[$p.pane_id] // {}) as $a
+        | { pane:       $p.pane_id,
+            agent_name: ($a.name | clean),
+            label:      ($p.label | clean),
+            title:      ($p.terminal_title_stripped | clean),
+            kind:       ($p.agent | clean),
+            state:      ($p.agent_status | clean),
+            session:    ($p.agent_session.value | clean),
+            cwd:        ($p.cwd | clean),
+            tab:        $p.tab_id,
+            workspace:  $p.workspace_id }
+        # The ladder from bin/herdr-whoami, in the order each identifier can be
+        # addressed by. Keep the two in step: this is what a peer will call you.
+        | . + ( if   .agent_name then {name: .agent_name, named: "agent"}
+                elif .label      then {name: .label,      named: "label"}
+                elif .title      then {name: .title,      named: "title"}
+                else                  {name: .pane,       named: "pane"}
+                end )
+      ]'
+}
+
+# The fleet is the panes with an agent in them. A bare shell is still in the
+# roster — it is how this process finds its own name when a human runs it from
+# a pane that is not an agent — but it can never be a recipient.
+fleet() {
+  printf '%s' "$ROSTER" | jq -c \
+    --arg kind "$F_KIND" --arg state "$F_STATE" --arg match "$F_MATCH" \
+    --arg exclude "$F_EXCLUDE" --arg cwd "$F_CWD" '
+    ($state | ascii_downcase | split(",")) as $states
+    | map(select(.kind != null))
+    | map(select($kind    == "" or .kind == $kind))
+    | map(select($state   == "" or ($states | index(.state // "unknown"))))
+    | map(select($match   == "" or (((.name + " " + (.title // "")) | ascii_downcase) | contains($match   | ascii_downcase))))
+    | map(select($exclude == "" or (((.name + " " + (.title // "")) | ascii_downcase) | contains($exclude | ascii_downcase) | not)))
+    | map(select($cwd     == "" or ((.cwd // "") | contains($cwd))))'
+}
+
+# Find the one agent `$1` names, or explain why it did not. Tried in order of
+# how sure the match is, so an exact name always beats someone else's prefix.
+resolve() {
+  _hits=$(printf '%s' "$ROSTER" | jq -c --arg t "$1" '
+    ($t | ascii_downcase) as $q
+    | map(select(.kind != null)) as $f
+    | [ $f[] | select((.pane | ascii_downcase) == $q) ] as $byid
+    | if ($byid | length) > 0 then $byid
+      else [ $f[] | select((.name | ascii_downcase) == $q
+                        or ((.agent_name // "") | ascii_downcase) == $q
+                        or ((.label // "") | ascii_downcase) == $q) ] as $exact
+        | if ($exact | length) > 0 then $exact
+          else [ $f[] | select((.name | ascii_downcase) | startswith($q)) ] as $pre
+            | if ($pre | length) > 0 then $pre
+              else [ $f[] | select(((.name + " " + (.title // "")) | ascii_downcase) | contains($q)) ]
+              end
+          end
+      end')
+  _n=$(printf '%s' "$_hits" | jq 'length')
+  if [ "$_n" -eq 0 ]; then
+    die "no agent matches '$1' — run \`herdr-agents\` to see the fleet"
+  elif [ "$_n" -gt 1 ]; then
+    printf 'herdr-agents: %s is ambiguous:\n' "'$1'" >&2
+    printf '%s' "$_hits" | jq -r '.[] | "  \(.name)  (\(.pane), \(.kind))"' >&2
+    exit 1
+  fi
+  printf '%s' "$_hits" | jq -c '.[0]'
+}
+
+field() { printf '%s' "$1" | jq -r --arg k "$2" '.[$k] // ""'; }
+
+# ---------------------------------------------------------------- who am I
+
+# The signature on every outgoing message. Read out of the same roster every
+# other name comes from, so it is by construction the name the recipient's own
+# listing shows for this pane. Outside herdr there is no pane to name, and
+# saying so is the honest answer: a human typed this.
+sender() {
+  if [ -n "$FROM" ]; then printf '%s' "$FROM"; return; fi
+  if [ -z "${HERDR_PANE_ID:-}" ]; then
+    printf '%s (outside herdr)' "${USER:-someone}"
+    return
+  fi
+  _me=$(printf '%s' "$ROSTER" | jq -r --arg p "$HERDR_PANE_ID" \
+    'map(select(.pane == $p)) | if length > 0 then .[0].name else "" end')
+  [ -n "$_me" ] || _me="$HERDR_PANE_ID"
+  printf '%s (%s)' "$_me" "$HERDR_PANE_ID"
+}
+
+# ---------------------------------------------------------------- listing
+
+cmd_ls() {
+  _rows=$(fleet)
+  [ "$(printf '%s' "$_rows" | jq 'length')" -gt 0 ] || { echo "no agents in the herd"; return 0; }
+
+  if [ -n "$AS_JSON" ]; then printf '%s' "$_rows" | jq .; return 0; fi
+  if [ -n "$AS_NAMES" ]; then printf '%s' "$_rows" | jq -r '.[].name'; return 0; fi
+
+  # A codex pane titled with its whole task description makes a fine name and a
+  # terrible column, so the column is capped and matching still sees all of it.
+  printf '%s' "$_rows" | jq -r --arg me "${HERDR_PANE_ID:-}" --arg long "$AS_LONG" '
+    .[]
+    | [ (.name | if length > 34 then .[0:33] + "…" else . end),
+        .kind,
+        (.state // "?")
+      ]
+      + (if $long == "" then [] else [.named, (.session // "UNLINKED"), (.cwd // "-")] end)
+      + [ .pane, (if .pane == $me then "<- you" else "" end) ]
+    | @tsv' | column -t -s "$TAB"
+}
+
+# ---------------------------------------------------------------- reading
+
+# The frame these TUIs draw around themselves: borders, spinners, prompt
+# glyphs. Dropping blank lines is not enough — the last rows of a settled agent
+# pane are its input box, so an unfiltered scrape returns a column of box
+# characters and none of the answer. A line survives if anything is left of it
+# once the chrome is removed, so "- one point" stays and "──────" does not.
+CHROME='[[:space:]─│┌┐└┘├┤┬┴┼━┃┏┓┗┛╭╮╰╯▌▐█░▒▓·•✻※✽✢∗❯»«▲▼◀▶⋮…⎿⏵⏺⠂=_-]'
+
+cmd_read() {
+  _row=$1
+  _pane=$(field "$_row" pane)
+  _out=$(herdr agent read "$_pane" --source "$SOURCE" --lines "$READ_LINES" --format text 2>&1) || {
+    printf 'herdr-agents: could not read %s: %s\n' "$(field "$_row" name)" \
+      "$(printf '%s' "$_out" | jq -r '.error.message // .error.code // .' 2>/dev/null || printf '%s' "$_out")" >&2
+    return 1
+  }
+  printf -- '--- %s (%s, %s, %s) — screen, not a reply\n' \
+    "$(field "$_row" name)" "$_pane" "$(field "$_row" kind)" "$(field "$_row" state)"
+  if [ -n "$RAW" ]; then
+    printf '%s\n' "$_out"
+    return 0
+  fi
+  _body=$(printf '%s\n' "$_out" | jq -Rr --arg chrome "$CHROME" 'select(gsub($chrome; "") | length > 0)')
+  if [ -z "$_body" ]; then
+    echo "(nothing readable on that screen — it may be mid-render, or the answer"
+    echo " scrolled off herdr's scrollback; ask it to write the answer to a file)"
+    return 0
+  fi
+  printf '%s\n' "$_body"
+}
+
+# ---------------------------------------------------------------- sending
+
+body_from() {
+  if [ $# -gt 0 ] && [ -n "$1" ] && [ "$1" != "-" ]; then
+    printf '%s' "$1"
+  elif [ -t 0 ]; then
+    die "no message — pass it as an argument or on stdin" 2
+  else
+    cat
+  fi
+}
+
+# One send. The blocked check is advisory and deliberately duplicated: herdr
+# refuses a blocked agent itself with agent_blocked before any input is sent,
+# but that refusal names a code and this names the agent, and the roster this
+# reads is a snapshot that may already be a second stale.
+send_one() {
+  _row=$1 _text=$2
+  _pane=$(field "$_row" pane) _name=$(field "$_row" name) _state=$(field "$_row" state)
+
+  if [ "$_pane" = "${HERDR_PANE_ID:-}" ]; then
+    die "$_name ($_pane) is this pane — prompting yourself is a loop, not a message"
+  fi
+  if [ "$_state" = blocked ]; then
+    printf 'herdr-agents: %s (%s) is blocked at a dialog and cannot be prompted.\n' "$_name" "$_pane" >&2
+    printf '             read it first: herdr-agents read %s\n' "$_name" >&2
+    return 1
+  fi
+
+  if [ -n "$DRY_RUN" ]; then
+    printf '[dry-run] -> %s (%s, %s, %s)\n' "$_name" "$_pane" "$(field "$_row" kind)" "$_state"
+    return 0
+  fi
+
+  set -- agent prompt "$_pane" "$_text"
+  [ -n "$WAIT" ] && set -- "$@" --wait --timeout "$TIMEOUT"
+  # stdin closed so a herdr call inside a `while read` loop cannot eat the
+  # list of recipients it is being fed from.
+  if _out=$(herdr "$@" </dev/null 2>&1); then
+    if [ -n "$WAIT" ]; then
+      _now=$(herdr agent get "$_pane" </dev/null 2>/dev/null | jq -r '.result.agent.agent_status // "?"')
+      printf 'sent -> %s (%s), now %s\n' "$_name" "$_pane" "$_now"
+    else
+      printf 'sent -> %s (%s)\n' "$_name" "$_pane"
+    fi
+    return 0
+  fi
+
+  _code=$(printf '%s' "$_out" | jq -r '.error.code // empty' 2>/dev/null)
+  printf 'herdr-agents: send to %s (%s) failed: %s\n' "$_name" "$_pane" \
+    "$(printf '%s' "$_out" | jq -r '.error.message // .error.code // .' 2>/dev/null || printf '%s' "$_out")" >&2
+  # herdr waits 5s after submitting to observe real working/blocked activity;
+  # an unrelated idle does not satisfy that gate. So these two say the wait
+  # failed, never that the keystrokes were not delivered — retrying blind
+  # submits the same work twice.
+  case $_code in
+    agent_prompt_stalled|timeout)
+      printf '             that is a failed wait, not proof of non-delivery — read %s before retrying\n' "$_name" >&2 ;;
+  esac
+  return 1
+}
+
+# ---------------------------------------------------------------- broadcast
+
+# Never the sender, never a blocked pane. Both are listed as skipped rather
+# than silently dropped, so the printed blast radius accounts for every agent.
+cmd_broadcast() {
+  _text=$1
+  _all=$(fleet)
+  _targets=$(printf '%s' "$_all" | jq -c --arg me "${HERDR_PANE_ID:-}" \
+    'map(select(.pane != $me and .state != "blocked"))')
+  _skipped=$(printf '%s' "$_all" | jq -c --arg me "${HERDR_PANE_ID:-}" \
+    'map(select(.pane == $me or .state == "blocked"))')
+  _n=$(printf '%s' "$_targets" | jq 'length')
+
+  printf 'broadcast to %s agent(s):\n' "$_n" >&2
+  printf '%s' "$_targets" | jq -r '.[] | "  \(.name)  (\(.pane), \(.kind), \(.state))"' >&2
+  printf '%s' "$_skipped" | jq -r --arg me "${HERDR_PANE_ID:-}" \
+    '.[] | "  skipped: \(.name)  (\(.pane)) — \(if .pane == $me then "that is you" else .state end)"' >&2
+  printf 'message:\n%s\n' "$_text" >&2
+
+  [ "$_n" -gt 0 ] || die "no agent matches those filters"
+  if [ -z "$YES" ]; then
+    [ -n "$DRY_RUN" ] && return 0
+    die "refusing to type that into $_n agents without --yes" 2
+  fi
+
+  _fail=0
+  while IFS= read -r _line; do
+    [ -n "$_line" ] || continue
+    send_one "$_line" "$_text" || _fail=$((_fail + 1))
+  done <<EOF
+$(printf '%s' "$_targets" | jq -c '.[]')
+EOF
+  [ -n "$DRY_RUN" ] || printf 'read any of them back with: herdr-agents read <name>\n' >&2
+  [ "$_fail" -eq 0 ] || return 1
+}
+
+# ---------------------------------------------------------------- roles
+
+# A file of `## <agent>` headings, each agent's brief underneath. The bulk form
+# of send, and the one case where a multi-agent blast is addressed rather than
+# sprayed — each body goes to the one agent named above it.
+#
+#   ## driver-vm
+#   You own the kernel driver. Do not touch the Python agent.
+#
+#   ## hardening-devops
+#   You own CI and packaging.
+cmd_roles() {
+  _src=$1
+  if [ "$_src" = "-" ]; then _text=$(cat); else
+    [ -r "$_src" ] || die "cannot read $_src"
+    _text=$(cat -- "$_src")
+  fi
+  _names=$(printf '%s\n' "$_text" | awk '/^## /{ sub(/^## +/, ""); sub(/[ \t]+$/, ""); if (length) print }')
+  [ -n "$_names" ] || die "no \`## <agent>\` headings in $_src"
+
+  # Every target is resolved before anything is sent, so a typo in the last
+  # heading does not leave half the fleet briefed. Keystrokes into a running
+  # agent cannot be taken back.
+  _plan='' _i=0
+  while IFS= read -r _nm; do
+    [ -n "$_nm" ] || continue
+    _i=$((_i + 1))
+    _row=$(resolve "$_nm") || exit 1
+    _plan="$_plan$_i$TAB$(field "$_row" pane)$TAB$_nm$TAB$(field "$_row" name)
+"
+  done <<EOF
+$_names
+EOF
+
+  printf 'briefing %s agent(s) from %s:\n' "$_i" "$_src" >&2
+  while IFS="$TAB" read -r _idx _pane _asked _got; do
+    [ -n "${_idx:-}" ] || continue
+    printf '  %s -> %s (%s)\n' "$_asked" "$_got" "$_pane" >&2
+  done <<EOF
+$_plan
+EOF
+
+  if [ -z "$YES" ]; then
+    [ -n "$DRY_RUN" ] || die "refusing to brief $_i agents without --yes" 2
+  fi
+
+  _fail=0
+  while IFS="$TAB" read -r _idx _pane _asked _got; do
+    [ -n "${_idx:-}" ] || continue
+    _body=$(printf '%s\n' "$_text" | awk -v want="$_idx" '
+      /^## / { n++; grab = (n == want); next }
+      grab   { print }')
+    case $(printf '%s' "$_body" | tr -d '[:space:]') in
+      '') printf 'herdr-agents: %s has an empty brief, skipped\n' "$_asked" >&2; _fail=$((_fail + 1)); continue ;;
+    esac
+    _row=$(printf '%s' "$ROSTER" | jq -c --arg p "$_pane" 'map(select(.pane == $p)) | .[0]')
+    send_one "$_row" "$PREFIX $_body" || _fail=$((_fail + 1))
+  done <<EOF
+$_plan
+EOF
+  [ "$_fail" -eq 0 ] || return 1
+}
+
+# ---------------------------------------------------------------- arguments
+
+CMD=ls
+if [ $# -gt 0 ]; then
+  case $1 in
+    ls|list)        CMD=ls; shift ;;
+    send|tell)      CMD=send; shift ;;
+    read)           CMD=read; shift ;;
+    broadcast|all)  CMD=broadcast; shift ;;
+    roles|brief)    CMD=roles; shift ;;
+    -h|--help)      usage; exit 0 ;;
+    -*)             : ;;   # bare flags with no verb list the fleet
+    *)              die "unknown command '$1' — try: ls send read broadcast roles" 2 ;;
+  esac
+fi
+
+AS_JSON='' AS_NAMES='' AS_LONG='' RAW='' DRY_RUN='' YES='' WAIT='' READ_BACK=''
+FROM='' TIMEOUT=$TIMEOUT_DEFAULT READ_LINES=$LINES_DEFAULT SOURCE=$SOURCE_DEFAULT
+F_KIND='' F_STATE='' F_MATCH='' F_EXCLUDE='' F_CWD=''
+P1='' P2='' NPOS=0
+
+want() { [ "$2" -gt 1 ] || die "$1 needs a value" 2; }
+
+while [ $# -gt 0 ]; do
+  case $1 in
+    --json|-j)   AS_JSON=1 ;;
+    --names)     AS_NAMES=1 ;;
+    --long|-l)   AS_LONG=1 ;;
+    --raw)       RAW=1 ;;
+    --dry-run|-n) DRY_RUN=1 ;;
+    --yes|-y)    YES=1 ;;
+    --wait)      WAIT=1 ;;
+    --read)      READ_BACK=1; WAIT=1 ;;
+    --from)      want "$1" $#; FROM=$2; shift ;;
+    --from=*)    FROM=${1#--from=} ;;
+    --timeout)   want "$1" $#; TIMEOUT=$2; shift ;;
+    --timeout=*) TIMEOUT=${1#--timeout=} ;;
+    --lines)     want "$1" $#; READ_LINES=$2; shift ;;
+    --lines=*)   READ_LINES=${1#--lines=} ;;
+    --source)    want "$1" $#; SOURCE=$2; shift ;;
+    --source=*)  SOURCE=${1#--source=} ;;
+    --kind)      want "$1" $#; F_KIND=$2; shift ;;
+    --kind=*)    F_KIND=${1#--kind=} ;;
+    --state)     want "$1" $#; F_STATE=$2; shift ;;
+    --state=*)   F_STATE=${1#--state=} ;;
+    --match)     want "$1" $#; F_MATCH=$2; shift ;;
+    --match=*)   F_MATCH=${1#--match=} ;;
+    --exclude)   want "$1" $#; F_EXCLUDE=$2; shift ;;
+    --exclude=*) F_EXCLUDE=${1#--exclude=} ;;
+    --cwd)       want "$1" $#; F_CWD=$2; shift ;;
+    --cwd=*)     F_CWD=${1#--cwd=} ;;
+    -h|--help)   usage; exit 0 ;;
+    --)          shift; break ;;
+    -*)          die "unknown option '$1'" 2 ;;
+    *)           NPOS=$((NPOS + 1))
+                 case $NPOS in
+                   1) P1=$1 ;;
+                   2) P2=$1 ;;
+                   *) die "too many arguments: '$1'" 2 ;;
+                 esac ;;
+  esac
+  shift
+done
+# Anything after `--` is the message body, so a text that starts with a dash is
+# still sendable.
+[ $# -gt 0 ] && { if [ "$NPOS" -eq 0 ]; then P1=$1; else P2=$1; fi; }
+
+case $TIMEOUT in *[!0-9]*|'') die "--timeout wants milliseconds, got '$TIMEOUT'" 2 ;; esac
+case $READ_LINES in *[!0-9]*|'') die "--lines wants a number, got '$READ_LINES'" 2 ;; esac
+
+need herdr
+need jq
+
+ROSTER=$(roster)
+PREFIX="[from $(sender)]"
+
+case $CMD in
+  ls)
+    [ "$NPOS" -eq 0 ] || die "ls takes no arguments (did you mean: herdr-agents send $P1 ...)" 2
+    cmd_ls
+    ;;
+  read)
+    [ -n "$P1" ] || { usage; exit 2; }
+    # Assigned rather than passed inline: resolve dies inside a command
+    # substitution, and that death is only visible as the assignment's status.
+    ROW=$(resolve "$P1") || exit 1
+    cmd_read "$ROW" || exit 1
+    ;;
+  send)
+    [ -n "$P1" ] || { usage; exit 2; }
+    ROW=$(resolve "$P1") || exit 1
+    BODY=$(body_from "$P2")
+    case "$(printf '%s' "$BODY" | tr -d '[:space:]')" in
+      '') die "refusing to send an empty message" 2 ;;
+    esac
+    send_one "$ROW" "$PREFIX $BODY" || exit 1
+    if [ -n "$READ_BACK" ]; then
+      echo
+      # Re-resolved after the wait so the header reports the state it settled
+      # in, not the one it held before the prompt landed.
+      ROW=$(resolve "$(field "$ROW" pane)") || exit 1
+      cmd_read "$ROW" || exit 1
+    fi
+    ;;
+  broadcast)
+    [ -z "$READ_BACK" ] || die "--read is single-agent; broadcast, then read each by name" 2
+    BODY=$(body_from "$P1")
+    case "$(printf '%s' "$BODY" | tr -d '[:space:]')" in
+      '') die "refusing to broadcast an empty message" 2 ;;
+    esac
+    cmd_broadcast "$PREFIX $BODY" || exit 1
+    ;;
+  roles)
+    [ -n "$P1" ] || { usage; exit 2; }
+    cmd_roles "$P1" || exit 1
+    ;;
+esac

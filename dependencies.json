@@ -1,82 +1,61 @@
 {
-  "schema_version": 1,
-  "captured": "2026-10-02",
-  "sources": [
-    {
-      "name": "dev-env",
-      "repository": "ariel-ps/dev-env",
-      "commit": "c0cd67570e2abf5783835ede00ab4ce2bce1b37c",
-      "local_head": "c0cd67570e2abf5783835ede00ab4ce2bce1b37c",
-      "patch": "patches/dev-env.patch",
-      "patch_sha256": "d07586cebb4f025476c0c34d0328014f529a22d51cca44a4b4eca8055cae5aa2",
-      "tree": "4a9639d6a8840e6bc621d2a3f0e0bae4eb9722c7"
-    },
-    {
-      "name": "herdr-kit",
-      "repository": "prompt-security/herdr-kit",
-      "commit": "48e8bb090c436d95fdfa9d38434fa6f6f92a26e2",
-      "local_head": "f039161b249257d26a8d878a6641961a341bead7",
-      "patch": "patches/herdr-kit.patch",
-      "patch_sha256": "7c8c5a46bcffd982f2eb346ed954fc4fbe3ba6c7a937db31d8e815cd4d0ca2cf",
-      "tree": "fa119db8677fe0557af317674d2a50249940b943"
-    }
-  ],
+  "schema_version": 2,
   "plugins": [
     {
       "id": "cloudmanic.herdr-plus",
       "name": "Herdr Plus",
-      "version": "0.1.24",
       "repository": "cloudmanic/herdr-plus",
       "subdir": "",
-      "ref": "bfd69da7e1b7b51d9139ea68ceba12ef5d5e79f4"
+      "ref": "bfd69da7e1b7b51d9139ea68ceba12ef5d5e79f4",
+      "enabled": true
     },
     {
       "id": "herdr-board",
       "name": "Herdr Board",
-      "version": "0.18.0",
       "repository": "nelsonPires5/herdr-board",
       "subdir": "",
-      "ref": "d7a67470309c378778e388982bda67eee6dc1a58"
+      "ref": "d7a67470309c378778e388982bda67eee6dc1a58",
+      "enabled": true
     },
     {
       "id": "herdr-grid",
       "name": "herdr-grid",
-      "version": "0.6.0",
       "repository": "thuanlm215/herdr-grid",
       "subdir": "",
-      "ref": "03f951b245c566b73f36eba76a234bd71b302801"
+      "ref": "03f951b245c566b73f36eba76a234bd71b302801",
+      "enabled": true
     },
     {
       "id": "herdr-sidebar",
       "name": "herdr-sidebar",
-      "version": "0.15.0",
       "repository": "alexarthurs/herdr-sidebar",
       "subdir": "plugins/herdr-sidebar",
-      "ref": "ee47651974bd1cc0fc7e3bd182dbfaf151b3c243"
+      "ref": "ee47651974bd1cc0fc7e3bd182dbfaf151b3c243",
+      "enabled": true
     },
     {
       "id": "nicosuave.memex",
       "name": "memex",
-      "version": "0.19.7",
       "repository": "nicosuave/memex",
       "subdir": "",
-      "ref": "8095e1090e4c8038b27337b097ba4a8bff9b1af7"
+      "ref": "8095e1090e4c8038b27337b097ba4a8bff9b1af7",
+      "enabled": true
     },
     {
       "id": "ray.plugin-manager",
       "name": "Plugin Manager",
-      "version": "0.4.0",
       "repository": "speardragon/herdr-plugin-manager",
       "subdir": "",
-      "ref": "cba67f110aafbe31c6b286435830626de4c75324"
+      "ref": "cba67f110aafbe31c6b286435830626de4c75324",
+      "enabled": true
     },
     {
       "id": "zenbu-labs.tode",
       "name": "Terminal Code",
-      "version": "0.1.1",
       "repository": "zenbu-labs/terminal-code",
       "subdir": "herdr-plugin",
-      "ref": "4c37066111067d7f56759038982f701d7832ba0f"
+      "ref": "4c37066111067d7f56759038982f701d7832ba0f",
+      "enabled": true
     }
   ],
   "packages": {
@@ -116,7 +95,8 @@
       "url": "https://astral.sh/uv/install.sh",
       "args": [],
       "env": {
-        "UV_NO_MODIFY_PATH": "1"
+        "UV_NO_MODIFY_PATH": "1",
+        "UV_INSTALL_DIR": "$HOME/.local/bin"
       }
     },
     "rust": {

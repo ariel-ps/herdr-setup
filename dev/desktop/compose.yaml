@@ -2,13 +2,11 @@ name: herdr-setup-test
 services:
   desktop:
     build:
-      context: ./docker
+      context: .
     ports:
       - "127.0.0.1:6080:6080"
     volumes:
-      - .:/opt/herdr-setup:ro
-    tmpfs:
-      - /run/setup-secrets:uid=1000,gid=1000,mode=0700
+      - ../..:/opt/herdr-setup:ro
     shm_size: 1gb
     init: true
     healthcheck:

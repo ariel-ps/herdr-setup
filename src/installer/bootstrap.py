@@ -9,11 +9,34 @@ import shutil
 import subprocess
 import tempfile
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def run(*args, **kwargs):
     subprocess.run([str(a) for a in args], check=True, **kwargs)
+
+
+def install_herdr(herdr, system):
+    current = subprocess.run(['herdr', '--version'], capture_output=True, text=True).stdout.strip() if shutil.which('herdr') else ''
+    if current:
+        print(f"Found {current}; validating compatibility during setup.", flush=True)
+        return
+    arch = {'arm64': 'aarch64', 'aarch64': 'aarch64', 'x86_64': 'x86_64', 'amd64': 'x86_64'}.get(platform.machine())
+    if arch is None:
+        raise SystemExit(f'Unsupported architecture: {platform.machine()}')
+    asset = f'herdr-{system}-{arch}'
+    entry = herdr['downloads'][f'{system}-{arch}']
+    with tempfile.TemporaryDirectory() as temporary:
+        binary = Path(temporary) / asset
+        url = f"https://github.com/herdrdev/herdr/releases/download/v{herdr['version']}/{asset}"
+        run('curl', '-fL', '--retry', '3', url, '-o', binary)
+        if hashlib.sha256(binary.read_bytes()).hexdigest() != entry['sha256']:
+            raise SystemExit('Herdr download checksum mismatch.')
+        target = Path.home() / '.local/bin/herdr'
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(binary, target)
+        target.chmod(0o755)
+        print(f'Installed Herdr {herdr["version"]}: {target}', flush=True)
 
 
 def main():
@@ -49,26 +72,9 @@ def main():
             script = Path(temporary) / 'install.sh'
             run('curl', '-fLsS', '--retry', '3', tool['url'], '-o', script)
             print('Installing ' + name, flush=True)
-            run('sh', script, *tool.get('args', []), env={**os.environ, **tool.get('env', {})})
-    herdr = manifest['herdr']
-    current = subprocess.run(['herdr', '--version'], capture_output=True, text=True).stdout.strip() if shutil.which('herdr') else ''
-    if current != 'herdr ' + herdr['version']:
-        if current:
-            print(f"Keeping existing {current}; captured version is {herdr['version']}.", flush=True)
-            return
-        arch = {'arm64': 'aarch64', 'aarch64': 'aarch64', 'x86_64': 'x86_64', 'amd64': 'x86_64'}[platform.machine()]
-        asset = f'herdr-{system}-{arch}'
-        entry = herdr['downloads'][f'{system}-{arch}']
-        with tempfile.TemporaryDirectory() as temporary:
-            binary = Path(temporary) / asset
-            url = f"https://github.com/herdrdev/herdr/releases/download/v{herdr['version']}/{asset}"
-            run('curl', '-fL', '--retry', '3', url, '-o', binary)
-            if hashlib.sha256(binary.read_bytes()).hexdigest() != entry['sha256']:
-                raise SystemExit('Herdr download checksum mismatch.')
-            target = Path.home() / '.local/bin/herdr'
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(binary, target)
-            target.chmod(0o755)
+            tool_env = {key: os.path.expandvars(value) for key, value in tool.get('env', {}).items()}
+            run('sh', script, *tool.get('args', []), env={**os.environ, **tool_env})
+    install_herdr(manifest['herdr'], system)
 
 
 if __name__ == '__main__':

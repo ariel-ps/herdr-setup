@@ -1,0 +1,302 @@
+#!/bin/sh
+# herdr-title — put a pane's identity on its label, and take it back off again.
+#
+# The dotfiles ancestor (kitty-agent-title) ran inside the agent, walked process
+# ancestry to find its kitty window, set the window title through `kitten @`, and
+# relied on a precmd hook in the pane's shell to undo that later. Three of those
+# four parts do not survive the move to herdr, and the fourth was the bug:
+#
+#   - ancestry: a plugin hook is spawned by the herdr server, so its ancestors
+#     are the server, not the pane. There is nothing to walk. The pane arrives as
+#     $HERDR_PANE_ID or in the event payload, and `herdr pane list` already knows
+#     that pane's cwd — which is the only thing the walk was ever for.
+#   - thirteen agent hook entries: not needed. herdr fires
+#     pane.agent_status_changed for the transitions those were emulating, for
+#     every agent kind it supports, with no per-agent wiring to keep in sync.
+#   - the undo hook: not needed, and this is the point. kitty forced a permanent
+#     title (a --temporary one loses to the agent's next OSC write within
+#     milliseconds), so the stamp outlived the agent and a second script in a
+#     second process had to clear it — the one wired through a ~/.local/bin
+#     symlink that breaks silently. Here "finished" is just another status:
+#     idle renders no glyph, so the code path that stamps is the one that unstamps.
+#
+# Label, not terminal title. herdr carries three name fields that disagree (see
+# bin/herdr-whoami). The title is the contested one: Claude Code and Codex both
+# rewrite it from their own hooks, and it is written through pane.report-metadata,
+# whose params carry source/seq/applies_to_source/ttl_ms precisely because several
+# writers race for it. Winning that race on every turn is the kitty --temporary
+# problem one layer up. The label is set by pane.rename, has exactly one writer,
+# renders in the split pane border, and is not an addressing handle — `herdr agent
+# prompt` takes the agent name, which this never touches. Stamping it costs
+# nothing another tool depends on.
+#
+# The label is composed, never replaced:
+#
+#     winarch · C ps-agent-windows-guard/PROE-7695 ⚙
+#     `-stem   `- derived: everything from the first separator onward
+#
+# which is what makes it idempotent with no stored state. The stem is recovered by
+# cutting at the separator, so re-stamping a stamped pane is the same operation as
+# stamping a fresh one, an interrupted run cannot compound, and a human who renames
+# the pane mid-flight has simply supplied a new stem. Nothing on disk, nothing to
+# dangle. The cost is that a hand-written label containing the separator loses its
+# tail — cheaper than the sidecar state this exists to delete.
+#
+# The glyph sits last and is therefore first to be clipped on a narrow border.
+# Deliberate: herdr's sidebar already renders a state icon per agent, so the
+# border's job is identity and the sidebar's is state.
+#
+#   herdr-title                    # stamp the pane this process is in
+#   herdr-title --pane w1:p6       # or that one
+#   herdr-title --all --dry-run    # what it would do to every pane, changing none
+#   herdr-title --all --restore    # take every stamp back off
+#
+# Knobs come from the environment only. title-hook.sh sources config.sh and passes
+# them through, because that file is documented as zsh and this is sh — callers are
+# agents shelling out with `sh -c`, the same reason bin/herdr-whoami is sh.
+#   HERDR_TITLE_OFF=1          do nothing at all
+#   HERDR_TITLE_SEP=' · '      stem/derived separator
+#   HERDR_TITLE_BRANCH=0       repo without the branch
+#   HERDR_TITLE_MAX_BRANCH=24  truncate branch names longer than this
+
+set -u
+
+mode=stamp
+scope=one
+dry=0
+quiet=0
+pane="${HERDR_PANE_ID:-}"
+status_in=
+agent_in=
+
+usage() {
+  cat >&2 <<'EOF'
+usage: herdr-title [--pane <id>] [--all] [--restore] [--dry-run] [--quiet]
+                   [--status <s>] [--agent <kind>]
+
+  (no flags)        stamp this pane's label with agent, repo/branch and state
+  --pane <id>       act on that pane instead of $HERDR_PANE_ID
+  --all             act on every pane herdr knows about
+  --restore         strip the stamp, leaving the stem
+  --dry-run, -n     print "pane<TAB>old<TAB>-><TAB>new" and change nothing
+  --quiet, -q       no output on success
+  --status <s>      idle|working|blocked|done|unknown, overriding the pane record
+  --agent <kind>    claude|codex|..., overriding the pane record
+EOF
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --pane)      shift; [ $# -gt 0 ] || { echo "herdr-title: --pane needs a pane id" >&2; exit 2; }; pane="$1" ;;
+    --pane=*)    pane="${1#--pane=}" ;;
+    --status)    shift; [ $# -gt 0 ] || { echo "herdr-title: --status needs a value" >&2; exit 2; }; status_in="$1" ;;
+    --status=*)  status_in="${1#--status=}" ;;
+    --agent)     shift; [ $# -gt 0 ] || { echo "herdr-title: --agent needs a value" >&2; exit 2; }; agent_in="$1" ;;
+    --agent=*)   agent_in="${1#--agent=}" ;;
+    --all|-a)    scope=all ;;
+    --restore|-r) mode=restore ;;
+    --dry-run|-n) dry=1 ;;
+    --quiet|-q)  quiet=1 ;;
+    -h|--help)   usage; exit 0 ;;
+    *)           echo "herdr-title: unknown option: $1" >&2; usage; exit 2 ;;
+  esac
+  shift
+done
+
+note() { [ "$quiet" = 1 ] || echo "herdr-title: $1" >&2; }
+
+# :- rather than - throughout: title-hook.sh exports these whether or not
+# config.sh set them, and an exported-but-empty HERDR_TITLE_SEP would collapse
+# the stem/derived split into an unrecoverable single string.
+sep="${HERDR_TITLE_SEP:- · }"
+maxbranch="${HERDR_TITLE_MAX_BRANCH:-24}"
+want_branch="${HERDR_TITLE_BRANCH:-1}"
+
+[ "${HERDR_TITLE_OFF:-0}" = 1 ] && exit 0
+
+# Absent tooling and a stopped server are both "herdr is not running here", which
+# is a no-op and not a failure — this runs from an event hook and from agents.
+command -v herdr >/dev/null 2>&1 || { note "herdr not on PATH"; exit 0; }
+command -v jq >/dev/null 2>&1 || { note "jq not found"; exit 0; }
+
+if [ "$scope" = one ] && [ -z "$pane" ]; then
+  echo "herdr-title: no pane (HERDR_PANE_ID unset; pass --pane <id>)" >&2
+  exit 2
+fi
+only=$pane
+[ "$scope" = all ] && only=
+
+# Two calls for the same reason bin/herdr-whoami makes two: `pane list` never
+# carries the agent name and `agent list` never carries the pane label or cwd.
+# Both are folded into one jq pass so --all costs two herdr invocations, not 2N.
+#
+# Fields are joined on \x1f, not tab. Tab is IFS whitespace, so `read` collapses
+# runs of it and drops empty fields — an unlabelled pane would then shift its
+# agent kind into the label slot and stamp the wrong string onto every pane that
+# has no label. A non-whitespace IFS preserves empty fields, and \x1f cannot
+# occur in a label, a cwd or a pane id, so nothing needs escaping.
+records=$(
+  { herdr pane list 2>/dev/null; herdr agent list 2>/dev/null; } | jq -s -r --arg only "$only" '
+    ((.[1] // {}) | (.result // {}) | (.agents // [])
+      | map({key: .pane_id, value: (.name // "")}) | from_entries) as $names
+    | ((.[0] // {}) | (.result // {}) | (.panes // []))
+    | map(select($only == "" or .pane_id == $only))[]
+    | [ .pane_id,
+        (.label // ""),
+        (.agent // ""),
+        (.agent_status // ""),
+        (.foreground_cwd // .cwd // ""),
+        ($names[.pane_id] // "") ]
+    | map(tostring) | join("\u001f")' 2>/dev/null
+) || records=
+
+[ -n "$records" ] || { note "no panes (is the server running?)"; exit 0; }
+
+# repo[/branch] for a directory, without running git. Two git subprocesses cost
+# ~98ms and this reproduces their answer in ~7ms, which mattered when the
+# ancestor ran on every PreToolUse; here what matters more is that it needs
+# neither git on the hook's PATH nor a readable index, and still answers for a
+# linked worktree.
+#
+# Walk up for .git, which lands on a linked worktree's own root the same way
+# `rev-parse --show-toplevel` does — a worktree's .git is a FILE, so -e and not
+# -d is what matches both cases. Then read HEAD directly: "ref: refs/heads/x"
+# yields x, and a bare sha means detached, which has no branch name to show.
+where_of() {
+  d=$1
+  [ -n "$d" ] || return 0
+  while [ -n "$d" ] && [ "$d" != / ]; do
+    [ -e "$d/.git" ] && break
+    d=${d%/*}
+    [ -n "$d" ] || d=/
+  done
+  [ -e "$d/.git" ] || return 0
+
+  if [ -d "$d/.git" ]; then
+    headfile=$d/.git/HEAD
+  else
+    gitdir=
+    IFS= read -r gitdir <"$d/.git" 2>/dev/null || :
+    gitdir=${gitdir#gitdir: }
+    [ -n "$gitdir" ] || return 0
+    headfile=$gitdir/HEAD
+  fi
+
+  ref=
+  IFS= read -r ref <"$headfile" 2>/dev/null || :
+  branch=
+  case "$ref" in "ref: refs/heads/"*) branch=${ref#ref: refs/heads/} ;; esac
+
+  # A mainline branch carries no information — every pane would show it. Prefixed
+  # branches are cut down to the part that identifies the work.
+  case "$branch" in
+    main|master|trunk|"") branch= ;;
+    feature/*|feat/*|fix/*|bugfix/*|chore/*|hotfix/*) branch=${branch#*/} ;;
+  esac
+  [ "$want_branch" = 0 ] && branch=
+  if [ -n "$branch" ] && [ ${#branch} -gt "$maxbranch" ]; then
+    branch=$(printf '%.*s…' $((maxbranch - 1)) "$branch")
+  fi
+
+  if [ -n "$branch" ]; then
+    printf '%s/%s' "${d##*/}" "$branch"
+  else
+    printf '%s' "${d##*/}"
+  fi
+}
+
+# Skipping the no-change case is what keeps this cheap enough to run on every
+# status transition: stem and repo barely move, so the only writes are the four
+# glyph states, not one rename per event.
+apply() {
+  ap_pane=$1 ap_old=$2 ap_new=$3
+  [ "$ap_new" = "$ap_old" ] && return 0
+  if [ "$dry" = 1 ]; then
+    printf '%s\t%s\t->\t%s\n' "$ap_pane" "${ap_old:--}" "${ap_new:--}"
+    return 0
+  fi
+  if [ -z "$ap_new" ]; then
+    herdr pane rename "$ap_pane" --clear >/dev/null 2>&1 </dev/null || return 0
+  else
+    herdr pane rename "$ap_pane" "$ap_new" >/dev/null 2>&1 </dev/null || return 0
+  fi
+  [ "$quiet" = 1 ] || printf '%s\t%s\n' "$ap_pane" "${ap_new:--}"
+}
+
+US=$(printf '\037')
+
+printf '%s\n' "$records" | while IFS="$US" read -r pid label agent status cwd name; do
+  [ -n "$pid" ] || continue
+  [ -n "$status_in" ] && status=$status_in
+  [ -n "$agent_in" ] && agent=$agent_in
+
+  case "$label" in
+    *"$sep"*) stem=${label%%"$sep"*} ;;
+    *)        stem=$label ;;
+  esac
+
+  # A pane with no label of its own borrows the agent name, which is the handle
+  # `herdr agent prompt` accepts and so the most useful thing to read off a
+  # border. Whether the stem was borrowed is then recoverable from the stem
+  # itself — it equals the agent name or the pane id — which is why --restore can
+  # clear a label it synthesised without remembering that it did.
+  synthesized=0
+  if [ -z "$stem" ]; then
+    stem=$name
+    synthesized=1
+  fi
+  if [ -z "$stem" ]; then
+    stem=$pid
+    synthesized=1
+  fi
+  [ "$stem" = "$name" ] && synthesized=1
+  [ "$stem" = "$pid" ] && synthesized=1
+  # `herdr pane rename` takes the label as a positional, so a leading dash would
+  # be parsed as a flag rather than a name.
+  while :; do
+    case "$stem" in -*) stem=${stem#-} ;; *) break ;; esac
+  done
+
+  if [ "$mode" = restore ]; then
+    if [ "$synthesized" = 1 ]; then apply "$pid" "$label" ""; else apply "$pid" "$label" "$stem"; fi
+    continue
+  fi
+
+  # No agent in the pane means the stamp has nothing left to describe: an agent
+  # that exited would otherwise leave its last state frozen on the border
+  # forever. Falling through to restore here is the second half of "no undo hook" —
+  # the agent leaving is itself a status change, and herdr reports it.
+  if [ -z "$agent" ]; then
+    if [ "$synthesized" = 1 ]; then apply "$pid" "$label" ""; else apply "$pid" "$label" "$stem"; fi
+    continue
+  fi
+
+  # One letter, so the width of the derived part does not move with the agent
+  # kind. Anything herdr grows support for later reads as its own name until it
+  # earns a letter.
+  case "$agent" in
+    claude) who=C ;;
+    codex)  who=X ;;
+    *)      who=$agent ;;
+  esac
+
+  # herdr collapses agent lifecycle to five states, against the ancestor's twelve
+  # hook events, and three of them are worth a glyph. idle and unknown draw
+  # nothing on purpose: a resting pane is the baseline, and drawing the baseline
+  # is what made nine panes unreadable in the first place.
+  glyph=
+  case "$status" in
+    working) glyph=⚙ ;;
+    blocked) glyph=❓ ;;
+    done)    glyph=✔ ;;
+  esac
+
+  where=$(where_of "$cwd")
+  derived=$who
+  [ -n "$where" ] && derived="$derived $where"
+  [ -n "$glyph" ] && derived="$derived $glyph"
+
+  apply "$pid" "$label" "$stem$sep$derived"
+done
+
+exit 0

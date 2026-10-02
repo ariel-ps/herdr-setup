@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install the locked setup into separate checkouts; dry-run is read-only."""
+"""Install the bundled Herdr toolkit and selected public plugins."""
 import argparse
 import hashlib
 import json
@@ -15,7 +15,7 @@ import tempfile
 import tomllib
 from datetime import datetime, timezone
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 BEGIN = '# >>> herdr-setup >>>'
 END = '# <<< herdr-setup <<<'
 
@@ -26,23 +26,14 @@ def run(*args, cwd=None, capture=False):
     return result.stdout.strip() if capture else None
 
 
-def sha256(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def validate_lock(lock):
-    if lock['schema_version'] != 1:
-        raise ValueError('Unsupported lock format')
-    for item in lock['sources']:
-        if not re.fullmatch(r'[0-9a-f]{40}', item['commit']):
-            raise ValueError('Source snapshots must have a full commit SHA')
-    for item in lock['sources'] + lock['plugins']:
+def validate_manifest(lock):
+    if lock['schema_version'] != 2:
+        raise ValueError('Unsupported dependency manifest format')
+    for item in lock['plugins']:
         if not re.fullmatch(r'[\w.-]+/[\w.-]+', item['repository']):
             raise ValueError('Invalid GitHub repository')
-    for item in lock['sources']:
-        patch = ROOT / item['patch']
-        if sha256(patch) != item['patch_sha256']:
-            raise ValueError(f"Patch checksum mismatch: {item['name']}")
+        if not isinstance(item.get('enabled', True), bool):
+            raise ValueError('Plugin enabled must be true or false')
 
 
 def resolve_ref(repository, ref):
@@ -59,7 +50,7 @@ def resolve_ref(repository, ref):
     raise ValueError(f'Cannot resolve {repository} @ {ref}')
 
 
-def shell_block(text):
+def shell_block(text, loader):
     """Replace only our block; reject old manual loading instead of doubling it."""
     if text.count(BEGIN) != text.count(END) or text.count(BEGIN) > 1:
         raise ValueError('Malformed herdr-setup block in .zshrc; fix it first')
@@ -70,10 +61,10 @@ def shell_block(text):
         unmanaged = text[:start] + text[finish:]
     else:
         unmanaged = text
-    if re.search(r'^\s*(?:source|\.)\s+[^\n]*(?:dev-env/init\.zsh|herdr-kit/shell/herdr\.sh)', unmanaged, re.M):
-        raise ValueError('Existing manual dev-env/herdr-kit source lines in .zshrc. '
+    if re.search(r'^\s*(?:source|\.)\s+[^\n]*herdr-kit/shell/herdr\.sh', unmanaged, re.M):
+        raise ValueError('Existing manual herdr-kit source line in .zshrc. '
                          'Migrate those lines first, or use --no-shell; see README.')
-    block = f'{BEGIN}\nsource {shlex.quote(str(ROOT / "shell/setup.zsh"))}\n{END}'
+    block = f'{BEGIN}\nsource {shlex.quote(str(loader))}\n{END}'
     if BEGIN in text:
         return text[:start] + block + text[finish:]
     return text.rstrip('\n') + ('\n\n' if text else '') + block + '\n'
@@ -116,32 +107,22 @@ class Writer:
                 os.unlink(temporary)
 
 
-def checkout(item, data_root):
-    destination = data_root / 'sources' / f"{item['name']}-{item['tree']}"
-    if destination.exists():
-        tree = run('git', 'write-tree', cwd=destination, capture=True)
-        clean = not run('git', 'status', '--porcelain', '--untracked-files=all',
-                        cwd=destination, capture=True)
-        if tree != item['tree'] or not clean:
-            raise ValueError(f'Managed checkout changed: {destination}. Preserve/move it before reinstalling.')
-        return destination
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix='.fetch-', dir=destination.parent) as temporary:
-        staging = Path(temporary) / 'repo'
-        run('git', 'init', '-q', staging)
-        run('git', 'remote', 'add', 'origin', f"https://github.com/{item['repository']}.git", cwd=staging)
-        run('git', 'fetch', '--depth=1', 'origin', item['commit'], cwd=staging)
-        run('git', 'checkout', '-q', '--detach', 'FETCH_HEAD', cwd=staging)
-        patch = ROOT / item['patch']
-        if patch.stat().st_size:
-            run('git', 'apply', '--index', patch, cwd=staging)
-        if run('git', 'write-tree', cwd=staging, capture=True) != item['tree']:
-            raise ValueError(f"Snapshot verification failed: {item['name']}")
-        # A local snapshot commit keeps the managed tree clean and inspectable.
-        run('git', '-c', 'user.name=Herdr Setup', '-c', 'user.email=setup@localhost',
-            '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null',
-            'commit', '--allow-empty', '-qm', 'Local setup snapshot', cwd=staging)
-        staging.rename(destination)
+def kit_destination(data_root):
+    digest = hashlib.sha256()
+    for path in sorted((ROOT / 'src/herdr-kit').rglob('*')):
+        if path.is_file() and '__pycache__' not in path.parts:
+            digest.update(str(path.relative_to(ROOT)).encode())
+            digest.update(path.read_bytes())
+    return data_root / 'kits' / digest.hexdigest()[:20]
+
+
+def install_kit(destination):
+    if not destination.exists():
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix='.kit-', dir=destination.parent) as temporary:
+            staging = Path(temporary) / 'kit'
+            shutil.copytree(ROOT / 'src/herdr-kit', staging, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+            staging.rename(destination)
     return destination
 
 
@@ -150,6 +131,10 @@ def install_plugins(lock, registry_path, kit):
     by_id = {p['plugin_id']: p for p in installed}
     for plugin in lock['plugins']:
         old = by_id.get(plugin['id'], {})
+        if not plugin.get('enabled', True):
+            if old.get('enabled'):
+                run('herdr', 'plugin', 'disable', plugin['id'])
+            continue
         source = old.get('source', {})
         root = Path(old.get('plugin_root', '/nonexistent'))
         managed = source.get('managed_path')
@@ -173,31 +158,29 @@ def install_plugins(lock, registry_path, kit):
         target_platform = 'macos' if platform.system() == 'Darwin' else 'linux'
         if 'platforms' not in step or target_platform in step['platforms']:
             run(*step['command'], cwd=kit)
-    run('herdr', 'plugin', 'link', kit, '--enabled')
+    run('herdr', 'plugin', 'link', kit, '--enabled', capture=True)
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dry-run', action='store_true', help='Print plan without writing or fetching')
-    parser.add_argument('--profile', choices=['full', 'essentials'], default='essentials')
     parser.add_argument('--no-shell', action='store_true', help='Leave .zshrc untouched')
-    parser.add_argument('--project-dir', type=Path, default=Path.home(), help='Working directory for layout panes')
+    parser.add_argument('--replace-config', action='store_true', help='Back up and replace existing Herdr defaults')
     args = parser.parse_args(argv)
     lock = json.loads((ROOT / 'dependencies.json').read_text())
-    validate_lock(lock)
+    validate_manifest(lock)
     config_home = Path(os.environ.get('XDG_CONFIG_HOME', str(Path.home() / '.config'))).expanduser().resolve()
     data_home = Path(os.environ.get('XDG_DATA_HOME', str(Path.home() / '.local/share'))).expanduser().resolve()
     data_root = data_home / 'herdr-setup'
     config = config_home / 'herdr'
     shell_rc = Path(os.environ.get('ZDOTDIR', str(Path.home()))).expanduser().resolve() / '.zshrc'
-    print(f"Profile: {args.profile}; captured Herdr: {lock['herdr']['version']}")
+    kit = kit_destination(data_root)
+    print(f"Herdr version for new installations: {lock['herdr']['version']}")
     for target, packages in lock['packages'].items():
         print(f'Packages ({target}): ' + ', '.join(packages))
-    for item in lock['sources']:
-        print(f"Source: {item['repository']} @ {item['commit'][:12]} + {item['patch']}")
     for item in lock['plugins']:
-        print(f"Plugin: {item['name']} @ {item['ref']}")
-    print(f'Checkouts: {data_root / "sources"}\nConfiguration: {config}')
+        print(f"Plugin: {item['name']} @ {item['ref']} ({'enabled' if item.get('enabled', True) else 'disabled'})")
+    print(f'Toolkit: {kit}\nConfiguration: {config}')
     print(f'Shell: {"unchanged" if args.no_shell else shell_rc}')
     if args.dry_run:
         return 0
@@ -214,42 +197,33 @@ def main(argv=None):
         print(f'Using {version}; this snapshot was captured with {lock["herdr"]["version"]}.')
     if os.environ.get('HERDR_CONFIG_PATH'):
         raise ValueError('Unset HERDR_CONFIG_PATH before installing into the standard XDG configuration.')
-    project = args.project_dir.expanduser().resolve()
-    if not project.is_dir():
-        raise ValueError(f'Project directory does not exist: {project}')
     rc_content = None
     if not args.no_shell:
-        rc_content = shell_block(shell_rc.read_text() if shell_rc.exists() else '')
-    # Authenticate and validate private access before changing local configuration.
-    for item in lock['sources']:
-        run('git', 'ls-remote', f"https://github.com/{item['repository']}.git", 'HEAD', capture=True)
+        rc_content = shell_block(shell_rc.read_text() if shell_rc.exists() else '', kit / 'setup.zsh')
     for item in lock['plugins']:
-        item['commit'] = resolve_ref(item['repository'], item['ref'])
-    roots = {item['name']: checkout(item, data_root) for item in lock['sources']}
+        if item.get('enabled', True):
+            item['commit'] = resolve_ref(item['repository'], item['ref'])
+    install_kit(kit)
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
     writer = Writer(data_root / 'backups' / stamp)
     registry = config / 'plugins.json'
     writer.backup(registry)
-    install_plugins(lock, registry, roots['herdr-kit'])
-    writer.write(config / 'config.toml', (ROOT / 'config/herdr.toml').read_bytes())
-    writer.write(config / 'plugins/config/dev.ariel.herdr-kit/config.sh', (ROOT / 'config/herdr-kit.sh').read_bytes())
-    paths = {'HERDR_SETUP_DEV_ENV': str(roots['dev-env']), 'HERDR_SETUP_KIT': str(roots['herdr-kit']),
-             'HERDR_SETUP_PROFILE': args.profile}
-    writer.write(config_home / 'herdr-setup/paths.zsh', ''.join(f'{k}={shlex.quote(v)}\n' for k, v in paths.items()))
-    for template in sorted((ROOT / 'layouts').glob('*.json')):
-        layout = json.loads(template.read_text())
-        def substitute(node):
-            if isinstance(node, dict):
-                return {k: substitute(v) for k, v in node.items()}
-            if isinstance(node, list):
-                return [substitute(v) for v in node]
-            return str(project) if node == '@PROJECT_DIR@' else node
-        writer.write(config / 'layouts' / template.name, json.dumps(substitute(layout), indent=2) + '\n')
+    install_plugins(lock, registry, kit)
+    defaults = (ROOT / 'config/herdr.toml').read_text().replace('"@ZSH@"', json.dumps(shutil.which('zsh')))
+    for target, content in [
+        (config / 'config.toml', defaults),
+        (config / 'plugins/config/dev.ariel.herdr-kit/config.sh', (ROOT / 'config/herdr-kit.sh').read_text()),
+    ]:
+        if target.exists() and not args.replace_config:
+            print(f'Keeping existing configuration: {target}')
+        else:
+            writer.write(target, content)
     if rc_content is not None:
         writer.write(shell_rc, rc_content)
     print('Installed. Open a new zsh and reload Herdr configuration through its menu.')
     if args.no_shell:
-        print('Shell integration: source ' + shlex.quote(str(ROOT / 'shell/setup.zsh')))
+        print('Shell integration: source ' + shlex.quote(str(kit / 'setup.zsh')))
+    print('Start Herdr: ' + shlex.quote(shutil.which('herdr')))
     if writer.records:
         print(f'Backups: {writer.backup_root}')
     return 0
