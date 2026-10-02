@@ -62,18 +62,20 @@
       "name": "Herdr Colors",
       "repository": "ariel-ps/herdr-colors",
       "subdir": "",
-      "ref": "5aa43fb434dfe431799afebd5022e1254c370b66",
+      "ref": "02c39aaddb27b1f4949a64b0d7db929733dc0d64",
       "enabled": true,
-      "shell": "shell.zsh"
+      "shell": "shell.zsh",
+      "shell_bash": "shell.bash"
     },
     {
       "id": "dev.ariel.herdr-alerts",
       "name": "Herdr Alerts",
       "repository": "ariel-ps/herdr-alerts",
       "subdir": "",
-      "ref": "80b3425bbdd44b930eeb6a40dd8b649ccf8ea9a1",
+      "ref": "f29965e1ac83ecddb6cfac1ad48df1a61aa9d16e",
       "enabled": true,
       "shell": "shell.zsh",
+      "shell_bash": "shell.bash",
       "config": "config.sh"
     },
     {
@@ -81,18 +83,20 @@
       "name": "Herdr Layouts",
       "repository": "ariel-ps/herdr-layouts",
       "subdir": "",
-      "ref": "d2fe36bd5711f72c433454e281d8a890b560f11b",
+      "ref": "6c1cbcb1ae497f723cd53d789f36cb78bc283ab0",
       "enabled": true,
-      "shell": "shell.zsh"
+      "shell": "shell.zsh",
+      "shell_bash": "shell.bash"
     },
     {
       "id": "dev.ariel.herdr-sessions",
       "name": "Herdr Sessions",
       "repository": "ariel-ps/herdr-sessions",
       "subdir": "",
-      "ref": "19806aebcd19a12e1a012f66cf5f151217de408e",
+      "ref": "a2b16fb88b5b9ebca20f6c4e4081adc63969e593",
       "enabled": true,
       "shell": "shell.zsh",
+      "shell_bash": "shell.bash",
       "config": "config.sh"
     },
     {

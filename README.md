@@ -4,7 +4,7 @@
 
 Give each pane its own color, get an alert when an agent needs attention, and save layouts to use again. Works on macOS, Ubuntu/Debian, and Fedora.
 
-You don't need Herdr installed already. Existing settings are preserved.
+You don't need Herdr installed already. Works with bash or zsh; existing settings are preserved.
 
 ## What it adds
 
@@ -47,10 +47,10 @@ gh api -H 'Accept: application/vnd.github.raw+json' \
 
 For plugin downloads that require authentication, sign in with `gh auth login` or set `GH_TOKEN` before installing.
 
-Open a new zsh, run `herdr-themes-build` once to create the pane colors, then launch `herdr`.
+Open a new terminal, run `herdr-themes-build` once to create the pane colors, then launch `herdr`.
 
 ## Customize
 
-Edit [`dependencies.json`](dependencies.json) and rerun the installer. Set any plugin's `enabled` field to `false` to disable it, or change `ref` to update its version. Open a new zsh after changing enabled plugins.
+Edit [`dependencies.json`](dependencies.json) and rerun the installer. Set any plugin's `enabled` field to `false` to disable it, or change `ref` to update its version. Open a new terminal after changing enabled plugins.
 
 [Installation options and paths](docs/installation.md) · [Dependency reference](docs/dependencies.md) · [Development and Docker/VNC testing](CONTRIBUTING.md)

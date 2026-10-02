@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import tomllib
 import unittest
 from unittest.mock import patch
 
@@ -73,15 +74,18 @@ class InstallTests(unittest.TestCase):
     def test_shell_loads_only_enabled_plugins_from_paths_with_spaces(self):
         with tempfile.TemporaryDirectory(prefix='new user ') as temp:
             root = Path(temp)
-            (root / 'shell.zsh').write_text('selected-feature() { print loaded; }\n')
+            (root / 'shell.zsh').write_text('selected-feature() { printf loaded; }\n')
+            (root / 'shell.bash').write_text('selected-feature() { printf loaded; }\n')
             registry = root / 'plugins.json'
             loader = root / 'loader.zsh'
-            loader.write_text(installer.shell_loader({'plugins': [{'id': 'example', 'shell': 'shell.zsh'}]}, registry))
-            for enabled in [True, False]:
-                registry.write_text(json.dumps([{'plugin_id': 'example', 'plugin_root': temp, 'enabled': enabled}]))
-                result = subprocess.run(['zsh', '-fc', 'source "$1"; whence selected-feature', 'check', str(loader)],
-                                        text=True, capture_output=True)
-                self.assertEqual(result.returncode == 0, enabled, result.stderr)
+            for shell in ['bash', 'zsh']:
+                loader.write_text(installer.shell_loader({'plugins': [{'id': 'example', 'shell': 'shell.zsh',
+                                                                      'shell_bash': 'shell.bash'}]}, registry, shell))
+                for enabled in [True, False]:
+                    registry.write_text(json.dumps([{'plugin_id': 'example', 'plugin_root': temp, 'enabled': enabled}]))
+                    result = subprocess.run([shell, '-fc', 'source "$1"; command -v selected-feature', 'check', str(loader)],
+                                            text=True, capture_output=True)
+                    self.assertEqual(result.returncode == 0, enabled, result.stderr)
 
     def test_github_credentials_are_scoped_without_changing_parent_environment(self):
         with patch.dict(os.environ, {'GH_TOKEN': 'test-token', 'GIT_CONFIG_COUNT': '1',
@@ -103,7 +107,7 @@ class InstallTests(unittest.TestCase):
                 self.assertEqual(run.call_args_list[-1].args, ('herdr', 'plugin', 'disable', 'dev.ariel.herdr-kit'))
 
     def test_plugin_paths_cannot_escape_the_checkout(self):
-        for field in ['shell', 'config', 'subdir']:
+        for field in ['shell', 'shell_bash', 'config', 'subdir']:
             with self.assertRaisesRegex(ValueError, 'path'):
                 installer.validate_manifest({'schema_version': 2, 'plugins': [
                     {'id': 'example', 'repository': 'owner/repo', field: '../outside'}]})
@@ -117,13 +121,61 @@ class InstallTests(unittest.TestCase):
                 'schema_version': 2, 'plugins': [], 'packages': {}, 'herdr': {'version': '0.9.3'}}))
             (root / '.zshrc').write_text('alias keep=true\n')
             env = {'XDG_CONFIG_HOME': str(root / 'preferences'), 'XDG_DATA_HOME': str(root / 'data'),
-                   'ZDOTDIR': temp, 'HERDR_CONFIG_PATH': ''}
+                   'ZDOTDIR': temp, 'HERDR_CONFIG_PATH': '', 'SHELL': '/bin/zsh'}
             with patch.dict(os.environ, env), patch.object(installer, 'ROOT', root), \
                  patch.object(installer.shutil, 'which', return_value='/usr/bin/zsh'), \
                  patch.object(installer, 'run', return_value='herdr 0.9.3'):
                 self.assertEqual(installer.main(['--no-shell']), 0)
             self.assertEqual((root / '.zshrc').read_text(), 'alias keep=true\n')
             self.assertTrue((root / 'data/herdr-setup/shell.zsh').is_file())
+
+    def test_bash_install_login_files_repeat_install_and_existing_config(self):
+        with tempfile.TemporaryDirectory(prefix='bash user ') as temp:
+            root = Path(temp)
+            (root / 'config').mkdir()
+            (root / 'config/herdr.toml').write_text((ROOT / 'config/herdr.toml').read_text())
+            (root / 'dependencies.json').write_text(json.dumps({
+                'schema_version': 2, 'plugins': [], 'packages': {}, 'herdr': {'version': '0.9.3'}}))
+            (root / '.bashrc').write_text('export KEEP_SETTING=yes\n')
+            (root / '.profile').write_text('export LOGIN_SETTING=yes\n')
+            env = {'HOME': temp, 'SHELL': '/bin/bash', 'HERDR_CONFIG_PATH': '',
+                   'XDG_CONFIG_HOME': str(root / 'preferences'), 'XDG_DATA_HOME': str(root / 'data')}
+            with patch.dict(os.environ, env), patch.object(installer, 'ROOT', root), \
+                 patch.object(installer, 'run', return_value='herdr 0.9.3'):
+                self.assertEqual(installer.main([]), 0)
+                config = root / 'preferences/herdr/config.toml'
+                self.assertEqual(tomllib.loads(config.read_text())['terminal']['default_shell'], '/bin/bash')
+                config.write_text('onboarding = true\n')
+                self.assertEqual(installer.main([]), 0)
+                self.assertEqual(config.read_text(), 'onboarding = true\n')
+            self.assertFalse((root / '.bash_profile').exists())
+            self.assertFalse((root / '.zshrc').exists())
+            for name in ['.bashrc', '.profile']:
+                self.assertEqual((root / name).read_text().count(installer.BEGIN), 1)
+            result = subprocess.run(['bash', '--noprofile', '--norc', '-c',
+                                     'source "$HOME/.profile"; source "$HOME/.bashrc"; '
+                                     'test "$KEEP_SETTING:$LOGIN_SETTING:$_HERDR_SETUP_LOADED" = yes:yes:1'],
+                                    env={**os.environ, **env}, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            # A shared .profile must remain safe when a POSIX shell reads it.
+            result = subprocess.run(['sh', '-c', '. "$HOME/.profile"'], env={**os.environ, **env}, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_shell_selection_and_bash_login_precedence(self):
+        with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {'HOME': temp, 'SHELL': '/bin/zsh'}):
+            root = Path(temp)
+            shell, executable, files = installer.shell_settings('bash')
+            self.assertEqual(shell, 'bash')
+            self.assertEqual(Path(executable).name, 'bash')
+            self.assertEqual(files, [root / '.bashrc', root / '.bash_profile'])
+            (root / '.profile').touch()
+            (root / '.bash_login').touch()
+            self.assertEqual(installer.shell_settings('bash')[2][-1], root / '.bash_login')
+            (root / '.bash_profile').touch()
+            self.assertEqual(installer.shell_settings('bash')[2][-1], root / '.bash_profile')
+            with patch.dict(os.environ, {'SHELL': '/bin/fish'}):
+                with self.assertRaisesRegex(ValueError, '--shell'):
+                    installer.shell_settings(None)
 
     def test_failed_install_keeps_legacy_plugin_enabled(self):
         with tempfile.TemporaryDirectory() as temp:

@@ -33,7 +33,7 @@ Fedora entries such as `/usr/bin/curl` and `/usr/bin/ffplay` let dnf choose the 
 
 Every plugin is fetched from its repository at the selected revision. This repository contains the installer and defaults, not plugin source. Colors, Alerts, Layouts, Sessions, Doomface, and Sidebar Menu can each be enabled independently.
 
-Optional entry fields: `shell` names the plugin's zsh integration file; `config` names its default configuration file. Both are paths relative to the plugin root. Shell integration checks Herdr's enabled-plugin registry whenever a new zsh starts.
+Optional entry fields: `shell` names the plugin's zsh integration file; `shell_bash` names its bash integration file; `config` names its default configuration file. All are paths relative to the plugin root. Shell integration checks Herdr's enabled-plugin registry whenever a new shell starts.
 
 For repositories requiring authentication, sign in with `gh auth login` or provide `GH_TOKEN`/`GITHUB_TOKEN`. Credentials are passed to Git for the download without changing global Git configuration.
 

@@ -16,11 +16,14 @@ Your terminal application and coding-agent CLIs are installed separately. The Li
 
 ```sh
 ./install.sh --dry-run          # Show the plan without installing
-./install.sh --no-shell         # Leave .zshrc untouched
+./install.sh --shell bash       # Choose bash explicitly (or --shell zsh)
+./install.sh --no-shell         # Leave shell startup files untouched
 ./install.sh --replace-config   # Back up and replace existing defaults
 ```
 
 `--dry-run` and `--help` skip bootstrapping and require Python 3.11+ or uv already available.
+
+The installer detects your login shell from `SHELL` (or your account settings). Bash and zsh are supported. Bash setup loads helpers from `.bashrc` and the first existing login file (`.bash_profile`, `.bash_login`, or `.profile`); if none exists, it creates `.bash_profile`. Zsh remains a runtime dependency for plugin scripts and is installed automatically on Linux. You do not need to switch your shell.
 
 For curl installation, pass options using `| sh -s -- --dry-run`. Set `HERDR_SETUP_REF` on the shell running the installer to select a branch, commit, or release tag; the default is `main`.
 
@@ -32,7 +35,8 @@ For curl installation, pass options using `| sh -s -- --dry-run`. Set `HERDR_SET
 | Herdr configuration | `~/.config/herdr` | `XDG_CONFIG_HOME` |
 | Installed plugins | `~/.config/herdr/plugins` | `XDG_CONFIG_HOME` |
 | Cached media | `~/.cache/herdr-kit` | `XDG_CACHE_HOME` |
-| Shell integration | `~/.zshrc` | `ZDOTDIR` |
+| Bash integration | `~/.bashrc` and the active login file | `HOME` |
+| Zsh integration | `~/.zshrc` | `ZDOTDIR` |
 | Herdr binary, if missing | `~/.local/bin/herdr` | Existing compatible binary on `PATH` |
 
 For custom locations, export the variables before installation and keep them set when running Herdr:
@@ -47,7 +51,7 @@ Existing configuration is preserved unless you use `--replace-config`. Backups i
 
 ## Defaults and optional features
 
-New configurations use zsh, the Catppuccin theme, terminal notifications, and Herdr's experimental Kitty graphics support. `prefix+up` opens Herdr Plus projects; `prefix+down` opens quick actions.
+New configurations use your selected shell, the Catppuccin theme, terminal notifications, and Herdr's experimental Kitty graphics support. Existing Herdr settings are preserved, including its pane shell; change `terminal.default_shell` in your Herdr configuration if you want existing installations to use bash. `prefix+up` opens Herdr Plus projects; `prefix+down` opens quick actions.
 
 Run `herdr-themes-build` once to build the palette cache. New panes apply the colors automatically.
 
@@ -57,4 +61,4 @@ Optional sound and sprite packs are fetched through the Alerts plugin's helpers.
 
 The installer replaces the combined Herdr Kit with independently selectable plugins. After successful installation, it stops the old Doom overlays and disables the old plugin to avoid duplicate hooks. Existing `config.sh` settings are copied into each new hook plugin's configuration directory when it has no settings yet. The old files remain available, and the plugin registry is backed up.
 
-Open a new zsh to load only the enabled plugins' helpers. Disabling Doomface stops its overlay within the polling interval; close any standalone Doom widget panes separately.
+Open a new terminal to load the enabled plugins' helpers. Disabling Doomface stops its overlay within the polling interval; close any standalone Doom widget panes separately.
