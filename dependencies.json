@@ -62,7 +62,7 @@
       "name": "Herdr Colors",
       "repository": "ariel-ps/herdr-colors",
       "subdir": "",
-      "ref": "5d2ddd858cdf60937d68ca386d653877cf137db9",
+      "ref": "06556c8322cbb8aa18889d1a40c986e8d94e91cc",
       "enabled": true,
       "shell": "shell.zsh",
       "shell_bash": "shell.bash"
@@ -83,7 +83,7 @@
       "name": "Herdr Layouts",
       "repository": "ariel-ps/herdr-layouts",
       "subdir": "",
-      "ref": "5cd9fd61654512ee8f473211ffa27ceff0d78a25",
+      "ref": "74e26f2c4afbd451869d52555e71ca38c57a8ce4",
       "enabled": true,
       "shell": "shell.zsh",
       "shell_bash": "shell.bash"
@@ -104,7 +104,7 @@
       "name": "Herdr Doomface",
       "repository": "ariel-ps/herdr-doomface",
       "subdir": "",
-      "ref": "a83f4259f58db3330c03512a5fd80dd3b2a0544a",
+      "ref": "1fcd4e4d6d06defcdb02d9bc171bb6d3492a98e0",
       "enabled": true,
       "config": "config.sh"
     },
