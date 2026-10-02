@@ -5,7 +5,7 @@ Run checks with Python 3.11+:
 ```sh
 python3 -m unittest discover -s tests -v
 ./install.sh --dry-run
-shellcheck install.sh src/installer/bootstrap.sh dev/desktop/*.sh
+shellcheck install.sh dev/desktop/*.sh
 zsh -n src/herdr-kit/setup.zsh
 ```
 

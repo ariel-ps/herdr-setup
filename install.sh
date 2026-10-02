@@ -53,38 +53,11 @@ herdr_setup_main() {
         fi
         mkdir "$setup_tmp/source"
         tar -xzf "$setup_tmp/setup.tar.gz" -C "$setup_tmp/source" --strip-components=1
-        for setup_required in install.sh dependencies.json src/installer/main.py src/installer/bootstrap.sh; do
+        for setup_required in install.sh dependencies.json src/installer/main.py src/installer/bootstrap.py; do
             [ -f "$setup_tmp/source/$setup_required" ] || { echo "Incomplete archive: $setup_required" >&2; return 1; }
         done
-        setup_preview=0
-        for setup_arg in "$@"; do
-            case "$setup_arg" in --dry-run|--help|-h) setup_preview=1 ;; esac
-        done
-        if [ "$setup_preview" = 1 ]; then
-            sh "$setup_tmp/source/install.sh" "$@"
-            return $?
-        fi
-        # Shell integration references these files after installation. Keep the
-        # downloaded release in a persistent directory, not the temporary one.
-        if command -v shasum >/dev/null 2>&1; then
-            setup_digest=$(shasum -a 256 "$setup_tmp/setup.tar.gz" | awk '{print $1}')
-        elif command -v sha256sum >/dev/null 2>&1; then
-            setup_digest=$(sha256sum "$setup_tmp/setup.tar.gz" | awk '{print $1}')
-        else
-            echo 'shasum or sha256sum is required.' >&2
-            return 1
-        fi
-        setup_releases="${XDG_DATA_HOME:-$HOME/.local/share}/herdr-setup/releases"
-        setup_root="$setup_releases/$setup_digest"
-        mkdir -p "$setup_releases"
-        if [ ! -d "$setup_root" ]; then
-            # Stage on the destination filesystem so the final rename is atomic.
-            setup_stage=$(mktemp -d "$setup_releases/.staging.XXXXXX")
-            trap 'rm -rf "$setup_tmp" "$setup_stage"' 0
-            cp -R "$setup_tmp/source/." "$setup_stage/"
-            mv "$setup_stage" "$setup_root"
-        fi
-        sh "$setup_root/install.sh" "$@"
+        # The installer copies runtime files into the user's data directory.
+        sh "$setup_tmp/source/install.sh" "$@"
         return $?
     fi
 
@@ -93,7 +66,23 @@ herdr_setup_main() {
         case "$setup_arg" in --dry-run|--help|-h) setup_bootstrap=0 ;; esac
     done
     if [ "$setup_bootstrap" = 1 ]; then
-        sh "$setup_root/src/installer/bootstrap.sh"
+        # Bootstrap the JSON reader; other dependencies live in dependencies.json.
+        if ! command -v python3 >/dev/null 2>&1; then
+            case "$(uname -s)" in
+                Darwin)
+                    command -v brew >/dev/null 2>&1 || { echo 'Install Homebrew from https://brew.sh first.' >&2; return 1; }
+                    brew install python ;;
+                Linux)
+                    command -v apt-get >/dev/null 2>&1 || { echo 'Automatic Linux bootstrap needs Ubuntu/Debian.' >&2; return 1; }
+                    if [ "$(id -u)" -eq 0 ]; then
+                        apt-get update && apt-get install -y python3
+                    else
+                        sudo apt-get update && sudo apt-get install -y python3
+                    fi ;;
+                *) echo 'Unsupported OS.' >&2; return 1 ;;
+            esac
+        fi
+        python3 "$setup_root/src/installer/bootstrap.py"
     fi
     if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; assert sys.version_info >= (3, 11)' >/dev/null 2>&1; then
         exec python3 "$setup_root/src/installer/main.py" "$@"

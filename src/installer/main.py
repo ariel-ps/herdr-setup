@@ -140,16 +140,14 @@ def install_plugins(lock, registry_path, kit):
         managed = source.get('managed_path')
         intact = False
         if managed and Path(managed).is_dir():
-            intact = not run('git', 'status', '--porcelain', cwd=managed, capture=True)
-            intact = intact and run('git', 'rev-parse', 'HEAD', cwd=managed, capture=True) == plugin['commit']
+            if run('git', 'status', '--porcelain', cwd=managed, capture=True):
+                raise ValueError(f"Plugin has local changes: {managed}. Preserve/move it before reinstalling.")
+            intact = run('git', 'rev-parse', 'HEAD', cwd=managed, capture=True) == plugin['commit']
         if (source.get('resolved_commit') == plugin['commit'] and intact
                 and (root / 'herdr-plugin.toml').is_file()):
             if not old.get('enabled'):
                 run('herdr', 'plugin', 'enable', plugin['id'])
             continue
-        if managed and Path(managed).is_dir() and not intact:
-            if run('git', 'status', '--porcelain', cwd=managed, capture=True):
-                raise ValueError(f"Plugin has local changes: {managed}. Preserve/move it before reinstalling.")
         spec = plugin['repository'] + ('/' + plugin['subdir'] if plugin['subdir'] else '')
         run('herdr', 'plugin', 'install', spec, '--ref', plugin['commit'], '--yes')
     # Linking does not run build steps, so execute the kit's declared build first.

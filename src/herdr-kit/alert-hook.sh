@@ -65,12 +65,6 @@ config="${HERDR_PLUGIN_CONFIG_DIR:-$root}"
 # Same tree the fetchers write into: sounds/<game>/, sprites/<game>/.
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/herdr-kit"
 
-# Cap the clip. Two of the packs are whole soundtracks rather than effects, and
-# a "done" alert that holds the speaker for thirty seconds gets switched off
-# rather than listened to. Empty plays in full, for anyone who disagrees.
-cap=()
-[[ -n "${HERDR_ALERT_MAX_SECONDS-3}" ]] && cap=(-t "${HERDR_ALERT_MAX_SECONDS:-3}")
-
 # Resolve an alert name to a clip on disk plus the sprite that belongs with it.
 # Sets `sound`, `sprite_game`, `sprite_name`; returns 1 without touching `sound`
 # when it cannot, so the caller keeps whatever fallback it already had.

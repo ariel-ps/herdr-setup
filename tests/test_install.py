@@ -1,6 +1,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -71,11 +72,24 @@ class InstallTests(unittest.TestCase):
     def test_kit_installs_under_arbitrary_data_directory(self):
         with tempfile.TemporaryDirectory(prefix='new user ') as temp:
             data = Path(temp) / 'custom data'
-            destination = installer.kit_destination(data)
-            installer.install_kit(destination)
+            with tempfile.TemporaryDirectory() as source, patch.object(installer, 'ROOT', Path(source)):
+                shutil.copytree(ROOT / 'src/herdr-kit', Path(source) / 'src/herdr-kit')
+                destination = installer.kit_destination(data)
+                installer.install_kit(destination)
+            # Runtime files remain usable after the downloaded source is removed.
             self.assertTrue((destination / 'setup.zsh').is_file())
             self.assertEqual(installer.install_kit(destination), destination)
             self.assertTrue(destination.is_relative_to(data))
+
+    def test_plugin_local_changes_stop_reinstallation(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            registry = root / 'plugins.json'
+            registry.write_text(json.dumps([{'plugin_id': 'example', 'source': {'managed_path': temp}}]))
+            with patch.object(installer, 'run', return_value=' M user-file') as run:
+                with self.assertRaisesRegex(ValueError, 'local changes'):
+                    installer.install_plugins({'plugins': [{'id': 'example'}]}, registry, root)
+                run.assert_called_once_with('git', 'status', '--porcelain', cwd=temp, capture=True)
 
 
 if __name__ == '__main__':

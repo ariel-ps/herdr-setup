@@ -42,7 +42,7 @@ shutil.copyfile(os.environ['TEST_ARCHIVE'], sys.argv[sys.argv.index('--output') 
         files = files or {
             'release/install.sh': self.script,
             'release/dependencies.json': '{}',
-            'release/src/installer/bootstrap.sh': '#!/bin/sh\nexit 0\n',
+            'release/src/installer/bootstrap.py': '',
             'release/src/installer/main.py': 'import json,sys\nfrom pathlib import Path\nprint(json.dumps({"file":str(Path(__file__).resolve()),"args":sys.argv[1:]}))\n',
         }
         with tarfile.open(self.archive, 'w:gz') as archive:
@@ -56,17 +56,14 @@ shutil.copyfile(os.environ['TEST_ARCHIVE'], sys.argv[sys.argv.index('--output') 
         return subprocess.run(['sh', '-s', '--', *args], input=self.script, text=True,
                               cwd=self.root, env=self.env, capture_output=True)
 
-    def test_pipe_install_keeps_source_and_forwards_arguments(self):
+    def test_pipe_install_cleans_source_and_forwards_arguments(self):
         self.archive_files()
         result = self.invoke('--no-shell')
         self.assertEqual(result.returncode, 0, result.stderr)
         output = json.loads(result.stdout.splitlines()[-1])
-        self.assertTrue(Path(output['file']).is_file())
-        self.assertIn('/data/herdr-setup/releases/', output['file'])
+        self.assertFalse(Path(output['file']).exists())
+        self.assertFalse((self.root / 'data').exists())
         self.assertEqual(output['args'], ['--no-shell'])
-        repeated = self.invoke('--no-shell')
-        self.assertEqual(repeated.returncode, 0, repeated.stderr)
-        self.assertEqual(json.loads(repeated.stdout.splitlines()[-1])['file'], output['file'])
 
     def test_preview_does_not_create_persistent_installation(self):
         self.archive_files()

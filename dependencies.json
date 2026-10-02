@@ -63,7 +63,6 @@
       "jq",
       "uv",
       "git",
-      "gh",
       "go",
       "ffmpeg"
     ],
