@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install the bundled Herdr toolkit and selected public plugins."""
+"""Install the bundled Herdr toolkit and selected community plugins."""
 import argparse
 import hashlib
 import json

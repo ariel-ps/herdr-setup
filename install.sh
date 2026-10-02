@@ -24,8 +24,8 @@ herdr_setup_main() {
         trap 'rm -rf "$setup_tmp"' 0
         trap 'exit 130' INT
         trap 'exit 143' TERM
-        # Header file avoids putting a private token in curl process arguments.
-        # GitHub CLI authentication is optional and only used for private access.
+        # Header file keeps the token out of curl process arguments.
+        # GitHub CLI authentication is optional.
         setup_token=${GH_TOKEN:-${GITHUB_TOKEN:-}}
         if [ -z "$setup_token" ] && command -v gh >/dev/null 2>&1; then
             setup_token=$(gh auth token 2>/dev/null || true)
@@ -41,7 +41,7 @@ herdr_setup_main() {
             --header "@$setup_tmp/headers" \
             "https://api.github.com/repos/ariel-ps/herdr-setup/tarball/$setup_ref" \
             --output "$setup_tmp/setup.tar.gz"; then
-            echo 'Download failed. While the repository is private, authenticate with gh auth login or set GH_TOKEN.' >&2
+            echo 'Download failed. Check your connection and repository access; if authentication is required, use gh auth login or set GH_TOKEN.' >&2
             return 1
         fi
         rm -f "$setup_tmp/headers"

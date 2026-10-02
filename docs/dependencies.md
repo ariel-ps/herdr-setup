@@ -1,6 +1,6 @@
 # Dependencies
 
-Edit [`dependencies.json`](../dependencies.json), then run `./install.sh`. There is no separate Brewfile or private source snapshot to maintain.
+Edit [`dependencies.json`](../dependencies.json), then run `./install.sh`.
 
 | Field | Purpose |
 | --- | --- |
@@ -9,7 +9,7 @@ Edit [`dependencies.json`](../dependencies.json), then run `./install.sh`. There
 | `tools` | Official installation scripts for tools missing from PATH |
 | `herdr.version` | Herdr release to install when it is missing |
 | `herdr.downloads` | SHA256 verification by OS and architecture |
-| `plugins` | Optional public plugins |
+| `plugins` | Optional community plugins |
 
 A plugin entry:
 
@@ -28,6 +28,6 @@ A plugin entry:
 
 To add a system prerequisite, append its name to the appropriate `packages` list. Package managers use available repository versions; plugin build scripts may download additional upstream assets.
 
-The bundled toolkit lives in `src/herdr-kit` and is maintained directly. It needs no private GitHub repository, base commit, or patch metadata.
+The bundled toolkit lives in `src/herdr-kit` and is maintained directly.
 
 The tiny bootstrap step installs Python if it is missing so the installer can read JSON. Herdr is downloaded for the detected OS/architecture and its checksum is verified before installation. A pre-existing Herdr installation is kept and checked for compatibility; upgrading an incompatible existing version remains the user's package-manager operation.

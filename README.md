@@ -4,8 +4,6 @@ Herdr Setup turns a fresh macOS or Ubuntu/Debian machine into a terminal workspa
 
 You do not need an existing Herdr installation or a particular project directory. The installer creates its directories, downloads Herdr when missing, and installs the bundled toolkit. Existing Herdr configuration is preserved by default.
 
-**Private preview:** the repository is still private. Public release and licensing are not finalized. The toolkit has no private source-repository dependencies.
-
 ## What you get
 
 Herdr manages the workspaces, tabs, panes, and agent sessions. This setup adds the configuration and helpers around them:
@@ -36,7 +34,7 @@ On either platform, you need:
 - Internet access for package repositories, Herdr, plugins, and their build dependencies.
 - A writable home directory and a terminal application for running Herdr. The installer does not install a terminal emulator; the Linux desktop test uses Kitty.
 - `curl`, `tar`, and a POSIX shell for the curl installation method. Minimal Linux images may need `curl` and CA certificates installed first.
-- Access to this GitHub repository while the preview is private. The private download command below uses an authenticated GitHub CLI (`gh`).
+- Access to this GitHub repository. If GitHub requires authentication, use the GitHub CLI (`gh`) command below.
 
 **Installed automatically:** Herdr when missing, required packages, Python, uv, Rust/Cargo, Go, and the selected plugins. The exact platform dependency lists live in [`dependencies.json`](dependencies.json); you do not need to install those tools individually. If Herdr is already installed, it must be version 0.9.3 or newer; the installer keeps that binary and rejects older versions.
 
@@ -50,20 +48,20 @@ From a downloaded or cloned copy, run:
 ./install.sh
 ```
 
-After the repository becomes public, the same entry point supports:
+Install with curl:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/ariel-ps/herdr-setup/main/install.sh | sh
 ```
 
-While private, fetch the script through your authenticated GitHub CLI:
+If GitHub requires authentication, fetch the script through your authenticated GitHub CLI:
 
 ```sh
 gh api -H 'Accept: application/vnd.github.raw+json' \
   repos/ariel-ps/herdr-setup/contents/install.sh | sh
 ```
 
-Authentication is needed to download this private preview, not to install its public dependencies. A local copy can be installed without GitHub credentials.
+A local copy can be installed without GitHub credentials.
 
 When installation finishes, open a new zsh and start Herdr using the printed command. New panes use zsh, where the toolkit's helpers are loaded. Run `herdr-themes-build` once to generate the pane palettes; new panes then apply them automatically.
 
@@ -81,7 +79,7 @@ Set a plugin's `enabled` field to `false` to skip installing it, or disable an e
 ./install.sh --replace-config   # Back up and replace existing defaults
 ```
 
-For curl installation, pass options using `| sh -s -- --dry-run`. `HERDR_SETUP_REF` can select a branch, commit, or release tag; it defaults to `main` during the preview.
+For curl installation, pass options using `| sh -s -- --dry-run`. `HERDR_SETUP_REF` can select a branch, commit, or release tag; it defaults to `main`.
 
 Paths are based on the current user's home and standard environment variables:
 
