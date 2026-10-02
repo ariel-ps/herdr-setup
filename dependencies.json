@@ -72,7 +72,7 @@
       "name": "Herdr Alerts",
       "repository": "ariel-ps/herdr-alerts",
       "subdir": "",
-      "ref": "0a3826b4e87285855501dbabbce69ca85f3888b0",
+      "ref": "a5474b9c99b21989362bdf9653233a0261101268",
       "enabled": true,
       "shell": "shell.zsh",
       "shell_bash": "shell.bash",
