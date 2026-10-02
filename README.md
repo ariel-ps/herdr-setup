@@ -47,7 +47,7 @@ gh api -H 'Accept: application/vnd.github.raw+json' \
 
 For plugin downloads that require authentication, sign in with `gh auth login` or set `GH_TOKEN` before installing.
 
-Open a new terminal, run `herdr-themes-build` once to create the pane colors, then launch `herdr`.
+Open a new terminal, then launch `herdr`. Pane colors are prepared during installation.
 
 Manage sounds with `herdr-sound`: `play` tests the included tone, `list` shows available sounds, and `download mario` downloads a pack. Then run `herdr-sound play 1up` or `herdr-sound set done 1up`. Use `disable`/`enable` to mute or enable automatic alerts, and `status` to check settings. [All sound commands](https://github.com/ariel-ps/herdr-alerts#commands).
 

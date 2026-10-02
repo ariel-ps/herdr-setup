@@ -62,7 +62,7 @@
       "name": "Herdr Colors",
       "repository": "ariel-ps/herdr-colors",
       "subdir": "",
-      "ref": "da2a0df46f3c1707514bb20e1513dbea4e7e98db",
+      "ref": "5d2ddd858cdf60937d68ca386d653877cf137db9",
       "enabled": true,
       "shell": "shell.zsh",
       "shell_bash": "shell.bash"
