@@ -1,10 +1,46 @@
 # Herdr Setup
 
-Install Herdr, pane colors, status alerts, layout helpers, and a configurable selection of community plugins on macOS or Ubuntu/Debian Linux.
+Herdr Setup turns a fresh macOS or Ubuntu/Debian machine into a terminal workspace for running multiple coding agents with Herdr. It installs Herdr, a bundled enhancement toolkit, and a configurable selection of community plugins.
 
 You do not need an existing Herdr installation or a particular project directory. The installer creates its directories, downloads Herdr when missing, and installs the bundled toolkit. Existing Herdr configuration is preserved by default.
 
 **Private preview:** the repository is still private. Public release and licensing are not finalized. The toolkit has no private source-repository dependencies.
+
+## What you get
+
+Herdr manages the workspaces, tabs, panes, and agent sessions. This setup adds the configuration and helpers around them:
+
+| Feature | What it does |
+| --- | --- |
+| Pane colors | Give panes distinct palettes so they are easier to tell apart. Build the palette cache with `herdr-themes-build`. |
+| Status alerts | Flash a pane and play a sound when an agent is blocked or finishes. Optional media packs add named sounds and sprites. |
+| Layout helpers | Save and restore pane arrangements with `herdr-layout-save` and `herdr-layout-load`; create agent grids with `herdr-grid-agents`. |
+| Session helpers | Inspect agents, synchronize their names, and link panes to existing agent sessions. |
+| Doom indicators | Show Claude context usage as a Doom face when the required assets and session data are available. |
+
+The default selection enables seven community plugins: **Herdr Plus, Board, Grid, Sidebar, memex, Plugin Manager, and Terminal Code**. The bundled **Herdr Kit** is the eighth plugin. Their source repositories and pinned revisions are listed in [`dependencies.json`](dependencies.json).
+
+For a new installation, the supplied configuration uses zsh, the Catppuccin theme, terminal notifications, and Herdr's experimental Kitty graphics support. It also binds `prefix+up` to Herdr Plus projects and `prefix+down` to quick actions. Existing configuration is kept unless you request replacement.
+
+This setup does not install coding-agent CLIs or sign into their accounts. Install and authenticate the agents you want to run separately. Optional sound/sprite packs are fetched through the toolkit's helpers; alerts use a bundled tone when the selected sound is unavailable.
+
+## Prerequisites
+
+| Platform | Have ready before running the installer |
+| --- | --- |
+| macOS, Apple Silicon or Intel | Homebrew available as `brew` in your terminal, including its command-line build tools. |
+| Ubuntu/Debian Linux, ARM64 or x86-64 | `apt-get` and permission to install packages through `sudo` or root. Other Linux package managers are not automated. |
+
+On either platform, you need:
+
+- Internet access for package repositories, Herdr, plugins, and their build dependencies.
+- A writable home directory and a terminal application for running Herdr. The installer does not install a terminal emulator; the Linux desktop test uses Kitty.
+- `curl`, `tar`, and a POSIX shell for the curl installation method. Minimal Linux images may need `curl` and CA certificates installed first.
+- Access to this GitHub repository while the preview is private. The private download command below uses an authenticated GitHub CLI (`gh`).
+
+**Installed automatically:** Herdr when missing, required packages, Python, uv, Rust/Cargo, Go, and the selected plugins. The exact platform dependency lists live in [`dependencies.json`](dependencies.json); you do not need to install those tools individually. If Herdr is already installed, it must be version 0.9.3 or newer; the installer keeps that binary and rejects older versions.
+
+No existing Herdr configuration, project folder structure, or Docker installation is required. `--dry-run` and `--help` skip bootstrapping, so those modes require Python 3.11+ or uv already available.
 
 ## Install
 
@@ -29,23 +65,13 @@ gh api -H 'Accept: application/vnd.github.raw+json' \
 
 Authentication is needed to download this private preview, not to install its public dependencies. A local copy can be installed without GitHub credentials.
 
-The installer handles system packages and toolchains. macOS requires Homebrew; Ubuntu/Debian requires package-installation privileges through root or sudo. Start Herdr using the command printed when installation finishes. New panes use zsh, where the toolkit's helpers are loaded.
+When installation finishes, open a new zsh and start Herdr using the printed command. New panes use zsh, where the toolkit's helpers are loaded. Run `herdr-themes-build` once to generate the pane palettes; new panes then apply them automatically.
 
 ## Choose your plugins
 
 Edit **[`dependencies.json`](dependencies.json)** and rerun `./install.sh`. It is the single list of operating-system packages, tool installers, Herdr downloads, and optional plugins.
 
 Set a plugin's `enabled` field to `false` to skip installing it, or disable an existing installation. Change `ref` to select a release tag or commit. See [dependency configuration](docs/dependencies.md).
-
-The default selection includes Herdr Plus, Board, Grid, Sidebar, memex, Plugin Manager, and Terminal Code. The bundled toolkit adds:
-
-- A distinct color for each pane.
-- Flash and sound alerts when an agent is blocked or finishes.
-- Layout save/load and agent grids.
-- Agent names and session helpers.
-- Optional Doom context-usage indicators for Claude panes.
-
-Agent CLIs and their account logins are separate. Optional sound/sprite packs are downloaded by the toolkit's helpers; the default audio fallback is a generated tone.
 
 ## Options
 
