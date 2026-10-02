@@ -1,0 +1,57 @@
+{
+  "root": {
+    "type": "split",
+    "direction": "right",
+    "ratio": 0.5,
+    "first": {
+      "type": "split",
+      "direction": "down",
+      "ratio": 0.5,
+      "first": {
+        "type": "pane",
+        "label": "driver-vm",
+        "cwd": "@PROJECT_DIR@"
+      },
+      "second": {
+        "type": "split",
+        "direction": "down",
+        "ratio": 0.5,
+        "first": {
+          "type": "pane",
+          "label": "ps-agent",
+          "cwd": "@PROJECT_DIR@"
+        },
+        "second": {
+          "type": "pane",
+          "label": "hardening-manager",
+          "cwd": "@PROJECT_DIR@"
+        }
+      }
+    },
+    "second": {
+      "type": "split",
+      "direction": "down",
+      "ratio": 0.5,
+      "first": {
+        "type": "pane",
+        "label": "winguard",
+        "cwd": "@PROJECT_DIR@"
+      },
+      "second": {
+        "type": "split",
+        "direction": "down",
+        "ratio": 0.5,
+        "first": {
+          "type": "pane",
+          "label": "hardening-devops",
+          "cwd": "@PROJECT_DIR@"
+        },
+        "second": {
+          "type": "pane",
+          "label": "hardening-ps-platform",
+          "cwd": "@PROJECT_DIR@"
+        }
+      }
+    }
+  }
+}

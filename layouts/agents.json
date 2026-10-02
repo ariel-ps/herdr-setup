@@ -1,0 +1,67 @@
+{
+  "root": {
+    "type": "split",
+    "direction": "right",
+    "ratio": 0.51282054,
+    "first": {
+      "type": "split",
+      "direction": "down",
+      "ratio": 0.47761193,
+      "first": {
+        "type": "pane",
+        "label": "winarch",
+        "cwd": "@PROJECT_DIR@"
+      },
+      "second": {
+        "type": "split",
+        "direction": "down",
+        "ratio": 0.1,
+        "first": {
+          "type": "pane",
+          "label": "argo",
+          "cwd": "@PROJECT_DIR@"
+        },
+        "second": {
+          "type": "split",
+          "direction": "down",
+          "ratio": 0.6451613,
+          "first": {
+            "type": "pane",
+            "label": "windriver",
+            "cwd": "@PROJECT_DIR@"
+          },
+          "second": {
+            "type": "pane",
+            "label": "psplatform",
+            "cwd": "@PROJECT_DIR@"
+          }
+        }
+      }
+    },
+    "second": {
+      "type": "split",
+      "direction": "down",
+      "ratio": 0.26865673,
+      "first": {
+        "type": "pane",
+        "label": "winguard-vm-tests",
+        "cwd": "@PROJECT_DIR@"
+      },
+      "second": {
+        "type": "split",
+        "direction": "down",
+        "ratio": 0.375,
+        "first": {
+          "type": "pane",
+          "label": "winguard",
+          "cwd": "@PROJECT_DIR@"
+        },
+        "second": {
+          "type": "pane",
+          "label": "psagent",
+          "cwd": "@PROJECT_DIR@"
+        }
+      }
+    }
+  }
+}

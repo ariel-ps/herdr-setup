@@ -33,15 +33,30 @@ def sha256(path):
 def validate_lock(lock):
     if lock['schema_version'] != 1:
         raise ValueError('Unsupported lock format')
-    for item in lock['sources'] + lock['plugins']:
+    for item in lock['sources']:
         if not re.fullmatch(r'[0-9a-f]{40}', item['commit']):
-            raise ValueError('Every dependency must have a full commit SHA')
+            raise ValueError('Source snapshots must have a full commit SHA')
+    for item in lock['sources'] + lock['plugins']:
         if not re.fullmatch(r'[\w.-]+/[\w.-]+', item['repository']):
             raise ValueError('Invalid GitHub repository')
     for item in lock['sources']:
         patch = ROOT / item['patch']
         if sha256(patch) != item['patch_sha256']:
             raise ValueError(f"Patch checksum mismatch: {item['name']}")
+
+
+def resolve_ref(repository, ref):
+    if re.fullmatch(r'[0-9a-f]{40}', ref):
+        return ref
+    if not re.fullmatch(r'[A-Za-z0-9_./-]+', ref) or ref.startswith('-'):
+        raise ValueError(f'Invalid Git ref: {ref}')
+    output = run('git', 'ls-remote', f'https://github.com/{repository}.git',
+                 f'refs/tags/{ref}', f'refs/tags/{ref}^{{}}', f'refs/heads/{ref}', capture=True)
+    refs = dict(line.split()[::-1] for line in output.splitlines())
+    for name in [f'refs/tags/{ref}^{{}}', f'refs/tags/{ref}', f'refs/heads/{ref}']:
+        if name in refs:
+            return refs[name]
+    raise ValueError(f'Cannot resolve {repository} @ {ref}')
 
 
 def shell_block(text):
@@ -155,7 +170,8 @@ def install_plugins(lock, registry_path, kit):
     # Linking does not run build steps, so execute the kit's declared build first.
     manifest = tomllib.loads((kit / 'herdr-plugin.toml').read_text())
     for step in manifest.get('build', []):
-        if 'platforms' not in step or 'macos' in step['platforms']:
+        target_platform = 'macos' if platform.system() == 'Darwin' else 'linux'
+        if 'platforms' not in step or target_platform in step['platforms']:
             run(*step['command'], cwd=kit)
     run('herdr', 'plugin', 'link', kit, '--enabled')
 
@@ -163,37 +179,39 @@ def install_plugins(lock, registry_path, kit):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dry-run', action='store_true', help='Print plan without writing or fetching')
-    parser.add_argument('--profile', choices=['full', 'essentials'], default='full')
+    parser.add_argument('--profile', choices=['full', 'essentials'], default='essentials')
     parser.add_argument('--no-shell', action='store_true', help='Leave .zshrc untouched')
     parser.add_argument('--project-dir', type=Path, default=Path.home(), help='Working directory for layout panes')
     args = parser.parse_args(argv)
-    lock = json.loads((ROOT / 'plugins.lock.json').read_text())
+    lock = json.loads((ROOT / 'dependencies.json').read_text())
     validate_lock(lock)
     config_home = Path(os.environ.get('XDG_CONFIG_HOME', str(Path.home() / '.config'))).expanduser().resolve()
     data_home = Path(os.environ.get('XDG_DATA_HOME', str(Path.home() / '.local/share'))).expanduser().resolve()
     data_root = data_home / 'herdr-setup'
     config = config_home / 'herdr'
     shell_rc = Path(os.environ.get('ZDOTDIR', str(Path.home()))).expanduser().resolve() / '.zshrc'
-    print(f"Profile: {args.profile}; captured Herdr: {lock['herdr_version']}")
+    print(f"Profile: {args.profile}; captured Herdr: {lock['herdr']['version']}")
+    for target, packages in lock['packages'].items():
+        print(f'Packages ({target}): ' + ', '.join(packages))
     for item in lock['sources']:
         print(f"Source: {item['repository']} @ {item['commit'][:12]} + {item['patch']}")
     for item in lock['plugins']:
-        print(f"Plugin: {item['name']} {item['version']} @ {item['commit'][:12]}")
+        print(f"Plugin: {item['name']} @ {item['ref']}")
     print(f'Checkouts: {data_root / "sources"}\nConfiguration: {config}')
     print(f'Shell: {"unchanged" if args.no_shell else shell_rc}')
     if args.dry_run:
         return 0
-    if platform.system() != 'Darwin':
-        raise ValueError('This setup currently supports macOS only.')
+    if platform.system() not in ('Darwin', 'Linux'):
+        raise ValueError('This setup supports macOS and Linux.')
     missing = [tool for tool in ['git', 'herdr', 'jq', 'zsh', 'uv'] if not shutil.which(tool)]
     if missing:
-        raise ValueError('Missing prerequisites: ' + ', '.join(missing) + '. Run brew bundle first.')
+        raise ValueError('Missing prerequisites: ' + ', '.join(missing) + '. Run ./install.sh to bootstrap them.')
     version = run('herdr', '--version', capture=True)
     match = re.search(r'(\d+)\.(\d+)\.(\d+)', version)
     if not match or tuple(map(int, match.groups())) < (0, 9, 3):
         raise ValueError('Herdr 0.9.3 or newer is required.')
-    if version.strip() != 'herdr ' + lock['herdr_version']:
-        print(f'Using {version}; this snapshot was captured with {lock["herdr_version"]}.')
+    if version.strip() != 'herdr ' + lock['herdr']['version']:
+        print(f'Using {version}; this snapshot was captured with {lock["herdr"]["version"]}.')
     if os.environ.get('HERDR_CONFIG_PATH'):
         raise ValueError('Unset HERDR_CONFIG_PATH before installing into the standard XDG configuration.')
     project = args.project_dir.expanduser().resolve()
@@ -205,6 +223,8 @@ def main(argv=None):
     # Authenticate and validate private access before changing local configuration.
     for item in lock['sources']:
         run('git', 'ls-remote', f"https://github.com/{item['repository']}.git", 'HEAD', capture=True)
+    for item in lock['plugins']:
+        item['commit'] = resolve_ref(item['repository'], item['ref'])
     roots = {item['name']: checkout(item, data_root) for item in lock['sources']}
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
     writer = Writer(data_root / 'backups' / stamp)

@@ -1,4 +1,6 @@
 # Source from an interactive zsh; installer writes the local paths file.
+typeset -U path
+path=("$HOME/.local/bin" "$HOME/.cargo/bin" $path)
 if [[ -r "${XDG_CONFIG_HOME:-$HOME/.config}/herdr-setup/paths.zsh" ]]; then
   source "${XDG_CONFIG_HOME:-$HOME/.config}/herdr-setup/paths.zsh"
 fi

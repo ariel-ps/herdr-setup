@@ -1,7 +1,6 @@
 {
   "schema_version": 1,
   "captured": "2026-10-02",
-  "herdr_version": "0.9.3",
   "sources": [
     {
       "name": "dev-env",
@@ -18,8 +17,8 @@
       "commit": "48e8bb090c436d95fdfa9d38434fa6f6f92a26e2",
       "local_head": "f039161b249257d26a8d878a6641961a341bead7",
       "patch": "patches/herdr-kit.patch",
-      "patch_sha256": "39fd013f41deb5150f25697fb911340a068de852cdd853f8245a06fc9bf9b0fd",
-      "tree": "d8a8b205a512b71ce0889b92f50d337e1116c2f1"
+      "patch_sha256": "7c8c5a46bcffd982f2eb346ed954fc4fbe3ba6c7a937db31d8e815cd4d0ca2cf",
+      "tree": "fa119db8677fe0557af317674d2a50249940b943"
     }
   ],
   "plugins": [
@@ -29,7 +28,7 @@
       "version": "0.1.24",
       "repository": "cloudmanic/herdr-plus",
       "subdir": "",
-      "commit": "bfd69da7e1b7b51d9139ea68ceba12ef5d5e79f4"
+      "ref": "bfd69da7e1b7b51d9139ea68ceba12ef5d5e79f4"
     },
     {
       "id": "herdr-board",
@@ -37,7 +36,7 @@
       "version": "0.18.0",
       "repository": "nelsonPires5/herdr-board",
       "subdir": "",
-      "commit": "d7a67470309c378778e388982bda67eee6dc1a58"
+      "ref": "d7a67470309c378778e388982bda67eee6dc1a58"
     },
     {
       "id": "herdr-grid",
@@ -45,7 +44,7 @@
       "version": "0.6.0",
       "repository": "thuanlm215/herdr-grid",
       "subdir": "",
-      "commit": "03f951b245c566b73f36eba76a234bd71b302801"
+      "ref": "03f951b245c566b73f36eba76a234bd71b302801"
     },
     {
       "id": "herdr-sidebar",
@@ -53,7 +52,7 @@
       "version": "0.15.0",
       "repository": "alexarthurs/herdr-sidebar",
       "subdir": "plugins/herdr-sidebar",
-      "commit": "ee47651974bd1cc0fc7e3bd182dbfaf151b3c243"
+      "ref": "ee47651974bd1cc0fc7e3bd182dbfaf151b3c243"
     },
     {
       "id": "nicosuave.memex",
@@ -61,7 +60,7 @@
       "version": "0.19.7",
       "repository": "nicosuave/memex",
       "subdir": "",
-      "commit": "8095e1090e4c8038b27337b097ba4a8bff9b1af7"
+      "ref": "8095e1090e4c8038b27337b097ba4a8bff9b1af7"
     },
     {
       "id": "ray.plugin-manager",
@@ -69,7 +68,7 @@
       "version": "0.4.0",
       "repository": "speardragon/herdr-plugin-manager",
       "subdir": "",
-      "commit": "cba67f110aafbe31c6b286435830626de4c75324"
+      "ref": "cba67f110aafbe31c6b286435830626de4c75324"
     },
     {
       "id": "zenbu-labs.tode",
@@ -77,7 +76,75 @@
       "version": "0.1.1",
       "repository": "zenbu-labs/terminal-code",
       "subdir": "herdr-plugin",
-      "commit": "4c37066111067d7f56759038982f701d7832ba0f"
+      "ref": "4c37066111067d7f56759038982f701d7832ba0f"
     }
-  ]
+  ],
+  "packages": {
+    "macos": [
+      "jq",
+      "uv",
+      "git",
+      "gh",
+      "go",
+      "ffmpeg"
+    ],
+    "linux": [
+      "ca-certificates",
+      "curl",
+      "git",
+      "jq",
+      "zsh",
+      "python3",
+      "python3-venv",
+      "perl",
+      "unzip",
+      "xz-utils",
+      "build-essential",
+      "pkg-config",
+      "libssl-dev",
+      "golang-go",
+      "ffmpeg",
+      "netcat-openbsd",
+      "procps",
+      "util-linux",
+      "file"
+    ]
+  },
+  "tools": {
+    "uv": {
+      "check": "uv",
+      "url": "https://astral.sh/uv/install.sh",
+      "args": [],
+      "env": {
+        "UV_NO_MODIFY_PATH": "1"
+      }
+    },
+    "rust": {
+      "check": "cargo",
+      "url": "https://sh.rustup.rs",
+      "args": [
+        "-y",
+        "--profile",
+        "minimal",
+        "--no-modify-path"
+      ]
+    }
+  },
+  "herdr": {
+    "version": "0.9.3",
+    "downloads": {
+      "linux-aarch64": {
+        "sha256": "4de7aa3e25678812e92960de64f7c2aaa1bca1f0f80a3c5e559837e231e1f5c0"
+      },
+      "linux-x86_64": {
+        "sha256": "18a8dc65f1c2fa485884344356dea1cfd911c6f06cf46fa78e193f4087f4dba7"
+      },
+      "macos-aarch64": {
+        "sha256": "5173a3e0ae42d5d1ab7ebfa5d5e6329f7c3d23f8e1a3677c7ce3231da2884157"
+      },
+      "macos-x86_64": {
+        "sha256": "db62d548ff3e832b087a96b1894a08d26be3905f1830309cd556783f215d4054"
+      }
+    }
+  }
 }

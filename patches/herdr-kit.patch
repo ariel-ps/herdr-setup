@@ -86,6 +86,44 @@ index eeb936a5ce810f886e916f7805f71ee1bd5a3764..e5dfc28f7c37713111bad2a1c47f9093
  A note if the kit ever reports a file missing from a path you never configured:
  `python3` being on `PATH` is not evidence that it runs. Shims that answer the
  lookup and then refuse the call exist — the modern-python Claude Code plugin
+diff --git a/alert-hook.sh b/alert-hook.sh
+index 324287bf884a1adf758453f8faab204dc37219fe..fc0028b77ee6d30439cefed847e5269f804df65a 100755
+--- a/alert-hook.sh
++++ b/alert-hook.sh
+@@ -115,14 +115,13 @@ __herdr_alert_list() {
+ case "${1:-}" in
+   --list) __herdr_alert_list; exit $? ;;
+   --play)
+-    command -v afplay >/dev/null 2>&1 || { echo "alert-hook: afplay not found" >&2; exit 1; }
+     __herdr_alert_resolve "${2:-}" || {
+       echo "alert-hook: nothing to play for '${2:-}' — unknown name, or that game is not synced (herdr-sounds-sync)" >&2
+       exit 1
+     }
+     print -r -- "$sound"
+-    afplay -v "${HERDR_VOLUME_DONE:-1.0}" $cap "$sound"
+-    exit 0 ;;
++    sh "$root/bin/herdr-play-sound" "$sound" "${HERDR_VOLUME_DONE:-1.0}" "${HERDR_ALERT_MAX_SECONDS:-}"
++    exit $? ;;
+ esac
+ 
+ command -v jq >/dev/null 2>&1 || exit 0
+@@ -202,7 +201,7 @@ if [[ "${HERDR_ALERT_FLASH:-1}" == 1 && -n "$pane" ]]; then
+       if [[ -n "$shell_pid" ]]; then
+         tty=$(ps -o tty= -p "$shell_pid" 2>/dev/null | tr -d ' ')
+         sprite="$root/vendor/sprite.pl"
+-        cols=$(stty -f "/dev/$tty" size 2>/dev/null | awk '{print $2}')
++        cols=$(stty size < "/dev/$tty" 2>/dev/null | awk '{print $2}')
+         if [[ -n "$tty" && -w "/dev/$tty" && -r "$sprite" && -n "$cols" ]]; then
+           # sprite.pl defaults SPRITE_DIR to the dotfiles cache it was vendored
+           # from, so the kit has to name its own tree or it draws someone else's
+@@ -225,6 +224,6 @@ if [[ "${HERDR_ALERT_FLASH:-1}" == 1 && -n "$pane" ]]; then
+   ) &!
+ fi
+ 
+-[[ -r "$sound" ]] && command -v afplay >/dev/null 2>&1 && afplay -v "$vol" $cap "$sound" &!
++[[ -r "$sound" ]] && sh "$root/bin/herdr-play-sound" "$sound" "$vol" "${HERDR_ALERT_MAX_SECONDS:-}" &!
+ 
+ exit 0
 diff --git a/bin/_doomface_core.py b/bin/_doomface_core.py
 new file mode 100644
 index 0000000000000000000000000000000000000000..9042b9c5d8a74199569408669f2a9d4de2a5b0aa
@@ -651,6 +689,31 @@ index 0000000000000000000000000000000000000000..c532a0963ca4362dee8c85401624cf92
 +
 +if __name__ == "__main__":
 +    sys.exit(main())
+diff --git a/bin/herdr-play-sound b/bin/herdr-play-sound
+new file mode 100644
+index 0000000000000000000000000000000000000000..9a5ed5826e239d8c82f87c04102c91c623fccc54
+--- /dev/null
++++ b/bin/herdr-play-sound
+@@ -0,0 +1,19 @@
++#!/bin/sh
++# Arguments: sound file, volume multiplier, optional duration in seconds.
++set -eu
++sound=$1
++volume=${2:-1.0}
++duration=${3:-}
++if command -v afplay >/dev/null 2>&1; then
++    if [ -n "$duration" ]; then
++        exec afplay -v "$volume" -t "$duration" "$sound"
++    fi
++    exec afplay -v "$volume" "$sound"
++elif command -v ffplay >/dev/null 2>&1; then
++    if [ -n "$duration" ]; then
++        exec ffplay -nodisp -autoexit -loglevel error -af "volume=$volume" -t "$duration" "$sound"
++    fi
++    exec ffplay -nodisp -autoexit -loglevel error -af "volume=$volume" "$sound"
++fi
++echo 'herdr-kit: install ffmpeg for Linux audio alerts.' >&2
++exit 1
 diff --git a/bin/herdr-session-pick b/bin/herdr-session-pick
 new file mode 100755
 index 0000000000000000000000000000000000000000..e8ca20b8cd2e083f173191e84084a774c39e1d18
@@ -870,9 +933,18 @@ index 0000000000000000000000000000000000000000..ff38cff90ed76156d32cf39c57b32854
 +  --placement split --target-pane "$target" --direction right --no-focus \
 +  --env "HERDR_DOOMFACE_TARGET=$target"
 diff --git a/herdr-plugin.toml b/herdr-plugin.toml
-index 87f250e18dff43af7c9d8298396fb97ebc97127e..74573f9122887eb0e64f2780f3821281693d8c83 100644
+index 87f250e18dff43af7c9d8298396fb97ebc97127e..aa6460e022b056a0181e79d5f6530cb8cd35c821 100644
 --- a/herdr-plugin.toml
 +++ b/herdr-plugin.toml
+@@ -9,7 +9,7 @@ name = "herdr kit"
+ version = "0.1.0"
+ min_herdr_version = "0.7.0"
+ description = "Per-pane colour, flash-and-sound alerts, layout save/restore, and an agent-to-agent skill."
+-platforms = ["macos"]
++platforms = ["macos", "linux"]
+ 
+ # Clones the palette pool and sprite packs into XDG cache. Kept out of the repo
+ # on purpose: 409 colour schemes and a megabyte of sprites are other people's
 @@ -32,6 +32,12 @@ command = ["sh", "scripts/sync-assets.sh"]
  [[build]]
  command = ["sh", "-c", "if command -v uv >/dev/null 2>&1; then uv run --no-project python scripts/gen-alert-tables.py; else python3 scripts/gen-alert-tables.py; fi || echo 'alerts: kept the committed table'"]
@@ -919,7 +991,7 @@ index 87f250e18dff43af7c9d8298396fb97ebc97127e..74573f9122887eb0e64f2780f3821281
 +[[panes]]
 +id = "doomface-widget"
 +title = "Doom Face"
-+platforms = ["macos"]
++platforms = ["macos", "linux"]
 +placement = "split"
 +command = ["sh", "-c", "if command -v uv >/dev/null 2>&1; then exec uv run --no-project python ./bin/herdr-doomface-widget; else exec python3 ./bin/herdr-doomface-widget; fi"]
 +

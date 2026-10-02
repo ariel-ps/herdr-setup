@@ -1,0 +1,18 @@
+name: herdr-setup-test
+services:
+  desktop:
+    build:
+      context: ./docker
+    ports:
+      - "127.0.0.1:6080:6080"
+    volumes:
+      - .:/opt/herdr-setup:ro
+    tmpfs:
+      - /run/setup-secrets:uid=1000,gid=1000,mode=0700
+    shm_size: 1gb
+    init: true
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:6080/vnc.html"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
