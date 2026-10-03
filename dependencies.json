@@ -83,7 +83,7 @@
       "name": "Herdr Layouts",
       "repository": "ariel-ps/herdr-layouts",
       "subdir": "",
-      "ref": "74e26f2c4afbd451869d52555e71ca38c57a8ce4",
+      "ref": "25b6d7c715f0797d258280db9170f0029058ad1c",
       "enabled": true,
       "shell": "shell.zsh",
       "shell_bash": "shell.bash"
