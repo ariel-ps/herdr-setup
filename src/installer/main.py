@@ -371,6 +371,7 @@ def main(argv=None):
     writer.write(loader, shell_loader(lock, registry, shell))
     for shell_rc, rc_content in rc_contents.items():
         writer.write(shell_rc, rc_content)
+    writer.write(data_root / 'dependencies.json', (ROOT / 'dependencies.json').read_text())
     section('Setup complete')
     message('OK', 'Plugins and shell integration are ready.', color='32')
     detail('Next', f'Open a new {shell}, then run herdr.')
