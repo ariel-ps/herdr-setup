@@ -33,7 +33,7 @@ description = "Use the Sound and visual alerts menu, or herdr-alert --help."
 
 [[options]]
 label = "Sprites"
-description = "Sprites stay until you leave their pane and return, including previews. Download a game pack for its artwork."
+description = "Focused panes clear sprites after about a second; unfocused panes keep them until you return. Download a game pack for artwork."
 
 [[options]]
 label = "Automatic features"
