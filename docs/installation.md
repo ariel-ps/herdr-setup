@@ -72,7 +72,7 @@ Herdr Plus supplies a mouse-driven overlay with search, descriptions, and keyboa
 
 Setup adds five menus: Tools (Git, Neovim, Board, and Grid), Sound and visual alerts, Plugin actions, Installed plugins, and Quick guide. Plugin actions reads the live plugin registry each time and includes only enabled actions for your operating system. Installed plugins opens the existing Plugin Manager for plugin state and management.
 
-The defaults live in `quick-actions/herdr-setup-*.toml` under the directory reported by `herdr plugin config-dir cloudmanic.herdr-plus`. Edit them there; rerunning Setup preserves edits unless `--replace-config` is selected. Other Quick Actions files remain untouched. Disabling Herdr Plus in `dependencies.json` skips these defaults. Neovim still needs to be installed separately; sound settings control the split Herdr Alerts plugin.
+The defaults live in `quick-actions/herdr-setup-*.toml` under the directory reported by `herdr plugin config-dir cloudmanic.herdr-plus`. Edit them there; rerunning Setup preserves edits unless `--replace-config` is selected. Other Quick Actions files remain untouched. Disabling Herdr Plus in `dependencies.json` skips these defaults. Bootstrap installs **Neovim** (`neovim` / Homebrew `neovim`) for the Tools → Code quick action; sound settings control the split Herdr Alerts plugin.
 
 ## Defaults and optional features
 
