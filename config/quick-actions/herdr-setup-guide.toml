@@ -33,7 +33,7 @@ description = "Use the Sound and visual alerts menu, or herdr-alert --help."
 
 [[options]]
 label = "Sprites"
-description = "Appear in previews and blocked-agent alerts, then clear. Download a game pack for its artwork."
+description = "Blocked-agent sprites stay until pane focus; previews clear automatically. Download a game pack for its artwork."
 
 [[options]]
 label = "Automatic features"
