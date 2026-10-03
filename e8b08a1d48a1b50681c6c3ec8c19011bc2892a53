@@ -1,0 +1,27 @@
+dependencies.json
+  37cdea2bc419c064 34,65,111-119,127
+README.md
+  37cdea2bc419c064 16,18
+docs/dependencies.md
+  37cdea2bc419c064 34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "2.0.0",
+  "base_commit_sha": "e8b08a1d48a1b50681c6c3ec8c19011bc2892a53",
+  "prompts": {
+    "37cdea2bc419c064": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "63760873-492d-4aea-9e9f-c9a70eaefd5c",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "ariel-ps <ariel@prompt.security>",
+      "messages": [],
+      "total_additions": 22,
+      "total_deletions": 11,
+      "accepted_lines": 16,
+      "overriden_lines": 0
+    }
+  }
+}
