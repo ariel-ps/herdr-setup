@@ -10,7 +10,7 @@ A ready-to-use [Herdr](https://github.com/herdrdev/herdr) environment for runnin
 | --- | --- |
 | A distinct color palette for each pane | [Colors](https://github.com/ariel-ps/herdr-colors) |
 | Sound and flash alerts when agents finish or need input | [Alerts](https://github.com/ariel-ps/herdr-alerts) |
-| Saved pane layouts, agent grids, and automatic Neovim in `code` tabs | [Layouts](https://github.com/ariel-ps/herdr-layouts) |
+| Saved pane layouts, agent grids, and automatic `code` and `board` tabs | [Layouts](https://github.com/ariel-ps/herdr-layouts) |
 | Agent inspection and session naming | [Sessions](https://github.com/ariel-ps/herdr-sessions) |
 | A Doom face that reflects Claude's context usage | [Doomface](https://github.com/ariel-ps/herdr-doomface) |
 | Git-root investigation scratch notes in `.journal/` | [Repo Journal](https://github.com/ariel-ps/repo-journal) (generic tool, installed via setup) |
