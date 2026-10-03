@@ -1,0 +1,48 @@
+name = "Quick guide"
+description = "Searchable reminders of shortcuts, commands, and automatic features."
+type = "select"
+command = "true"
+
+[[options]]
+label = "Control panel"
+description = "Prefix+Down; click a row or type to search; Esc goes back."
+
+[[options]]
+label = "Git popup"
+description = "Cmd+Shift+G or prefix+d; q closes Lazygit."
+
+[[options]]
+label = "Code tab"
+description = "Name an idle, single-pane tab code to open nvim ."
+
+[[options]]
+label = "Board tab"
+description = "Name an idle, single-pane tab board to open the kanban."
+
+[[options]]
+label = "Folders"
+description = "Visit with cd once; z name returns; zi picks a visited folder."
+
+[[options]]
+label = "Save a layout"
+description = "herdr-layout-save NAME; herdr-layout-up NAME restores it."
+
+[[options]]
+label = "Sound settings"
+description = "Use the Sound and visual alerts menu, or herdr-sound --help."
+
+[[options]]
+label = "Sprites"
+description = "Appear on blocked-agent alerts, not manual sound previews."
+
+[[options]]
+label = "Automatic features"
+description = "Require the corresponding plugin, settings, and assets."
+
+[[options]]
+label = "Shell helpers"
+description = "Open a new shell after changing enabled plugins."
+
+[[options]]
+label = "Default prefix"
+description = "Ctrl+B, release it, then press the next key."

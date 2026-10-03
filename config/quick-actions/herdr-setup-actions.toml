@@ -1,0 +1,17 @@
+name = "Plugin actions"
+description = "Search every enabled plugin action. New plugins appear automatically."
+command = '''
+sh -c '"${HERDR_BIN_PATH:-herdr}" plugin action invoke "$1"
+
+code=$?
+printf "\nPress Enter to return to Herdr..."
+read -r answer </dev/tty || :
+exit "$code"
+' herdr-control'''
+
+type = "select"
+options_command = '''
+case "$(uname -s)" in Darwin) os=macos ;; Linux) os=linux ;; *) exit 1 ;; esac
+plugins=$("${HERDR_BIN_PATH:-herdr}" plugin list --json) || exit
+printf '%s' "$plugins" | jq -r --arg os "$os" '.result.plugins[] | select(.enabled) | . as $plugin | .actions[]? | select((.platforms // $plugin.platforms // [$os]) | index($os)) | [$plugin.plugin_id + "." + .id, $plugin.name + " / " + .title + (if .description then " — " + .description else "" end)] | @tsv'
+'''

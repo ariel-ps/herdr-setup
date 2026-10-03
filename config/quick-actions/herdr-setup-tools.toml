@@ -1,0 +1,38 @@
+name = "Tools"
+description = "Open Git, code, your board, or the layout editor."
+command = '''
+sh -c 'case "$1" in
+  git) lazygit </dev/tty ;;
+  code) nvim . </dev/tty ;;
+  board) "${HERDR_BIN_PATH:-herdr}" plugin action invoke herdr-board.open-board ;;
+  grid) "${HERDR_BIN_PATH:-herdr}" plugin action invoke herdr-grid.open ;;
+  *) printf '"'"'Unknown tool\n'"'"' >&2; exit 2 ;;
+esac
+code=$?
+if [ "$code" -ne 0 ]; then
+  printf '"'"'\nTool failed. Press Enter to close...'"'"'; read -r answer </dev/tty || :
+fi
+exit "$code"
+' herdr-control'''
+
+type = "select"
+
+[[options]]
+label = "Git"
+value = "git"
+description = "Lazygit in the project you opened the panel from."
+
+[[options]]
+label = "Code"
+value = "code"
+description = "Neovim in this project; requires nvim on PATH."
+
+[[options]]
+label = "Board"
+value = "board"
+description = "Kanban tasks and agent dispatch."
+
+[[options]]
+label = "Layout editor"
+value = "grid"
+description = "Arrange panes visually."

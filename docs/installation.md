@@ -66,6 +66,14 @@ The defaults follow Datalumina's [Lazygit](https://learn.datalumina.com/docs/her
 
 The shell loader contains these helpers, so removing the downloaded installer does not break them. `--no-shell` still generates the loader but leaves startup files unchanged. Open a new shell to load updated helpers. Icons require a Nerd Font in your terminal; terminal and font installation remain your choice.
 
+## Control panel
+
+Herdr Plus supplies a mouse-driven overlay with search, descriptions, and keyboard navigation. Open **Herdr Plus: Quick Actions** from the plugin menu, or use **prefix+Down** with the default configuration. Click or press Enter to select; Esc goes back or closes the panel.
+
+Setup adds five menus: Tools (Git, Neovim, Board, and Grid), Sound and visual alerts, Plugin actions, Installed plugins, and Quick guide. Plugin actions reads the live plugin registry each time and includes only enabled actions for your operating system. Installed plugins opens the existing Plugin Manager for plugin state and management.
+
+The defaults live in `quick-actions/herdr-setup-*.toml` under the directory reported by `herdr plugin config-dir cloudmanic.herdr-plus`. Edit them there; rerunning Setup preserves edits unless `--replace-config` is selected. Other Quick Actions files remain untouched. Disabling Herdr Plus in `dependencies.json` skips these defaults. Neovim still needs to be installed separately; sound settings control the split Herdr Alerts plugin.
+
 ## Defaults and optional features
 
 New configurations use your selected shell, the Catppuccin theme, terminal notifications, and Herdr's experimental Kitty graphics support. Existing Herdr settings are preserved, including its pane shell; change `terminal.default_shell` in your Herdr configuration if you want existing installations to use bash. `prefix+up` opens Herdr Plus projects; `prefix+down` opens quick actions.

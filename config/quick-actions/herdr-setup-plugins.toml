@@ -1,0 +1,10 @@
+name = "Installed plugins"
+description = "See installed plugins, expand their actions, and manage them."
+command = '''
+sh -c '"${HERDR_BIN_PATH:-herdr}" plugin pane open --plugin ray.plugin-manager --entrypoint manager --placement overlay --focus
+code=$?
+if [ "$code" -ne 0 ]; then
+  printf '"'"'\nPlugin Manager could not open. Press Enter to close...'"'"'; read -r answer </dev/tty || :
+fi
+exit "$code"
+' herdr-control'''

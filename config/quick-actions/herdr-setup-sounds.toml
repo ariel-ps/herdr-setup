@@ -1,0 +1,65 @@
+name = "Sound and visual alerts"
+description = "Preview a sound, mute alerts, or change flash and sprite settings."
+command = '''
+sh -c 'export PATH="$HOME/.local/bin:$PATH"
+case "$1" in
+  status|list|play|enable|disable) herdr-sound "$1" ;;
+  flash-on) herdr-sound set flash on ;;
+  flash-off) herdr-sound set flash off ;;
+  sprite-on) herdr-sound set sprite on ;;
+  sprite-off) herdr-sound set sprite off ;;
+  *) printf '"'"'Unknown sound setting\n'"'"' >&2; exit 2 ;;
+esac
+
+code=$?
+printf "\nPress Enter to return to Herdr..."
+read -r answer </dev/tty || :
+exit "$code"
+' herdr-control'''
+
+type = "select"
+
+[[options]]
+label = "Current settings"
+value = "status"
+description = "Show sound, flash, sprite and playback settings."
+
+[[options]]
+label = "Preview alert"
+value = "play"
+description = "Play the configured alert."
+
+[[options]]
+label = "Available sounds"
+value = "list"
+description = "See sound choices."
+
+[[options]]
+label = "Enable automatic sounds"
+value = "enable"
+description = "Unmute agent notifications."
+
+[[options]]
+label = "Mute automatic sounds"
+value = "disable"
+description = "Keep explicit previews available."
+
+[[options]]
+label = "Flash on"
+value = "flash-on"
+description = "Enable screen flashes."
+
+[[options]]
+label = "Flash off"
+value = "flash-off"
+description = "Disable screen flashes."
+
+[[options]]
+label = "Sprite on"
+value = "sprite-on"
+description = "Show sprites on blocked-agent alerts."
+
+[[options]]
+label = "Sprite off"
+value = "sprite-off"
+description = "Hide blocked-agent sprites."

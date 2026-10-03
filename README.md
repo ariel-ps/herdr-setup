@@ -8,6 +8,7 @@ A ready-to-use [Herdr](https://github.com/herdrdev/herdr) environment for runnin
 
 | Feature | Component |
 | --- | --- |
+| Searchable, clickable control panel for tools, plugins, alerts, and help | Herdr Plus Quick Actions |
 | A distinct color palette for each pane | [Colors](https://github.com/ariel-ps/herdr-colors) |
 | Sound and flash alerts when agents finish or need input | [Alerts](https://github.com/ariel-ps/herdr-alerts) |
 | Saved pane layouts, agent grids, and automatic `code` and `board` tabs | [Layouts](https://github.com/ariel-ps/herdr-layouts) |
@@ -62,6 +63,8 @@ herdr
 ```
 
 New panes receive their colors automatically. If Herdr is already running, reload its configuration through the menu.
+
+Press **prefix+Down** (by default, Ctrl+B then Down) for the control panel. Click a row or type to search: **Tools**, **Sound and visual alerts**, **Plugin actions**, **Installed plugins**, or **Quick guide**. New enabled plugins appear automatically in Plugin actions. You can also open **Herdr Plus: Quick Actions** from Herdr's plugin menu.
 
 In a repository, press **Cmd+Shift+G** or **prefix+d** to open Lazygit; press **q** to close it. The default prefix is Ctrl+B. You can also run `lazygit` directly.
 
