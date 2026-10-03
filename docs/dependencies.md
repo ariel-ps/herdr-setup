@@ -31,7 +31,7 @@ To add a system prerequisite, append its name to the appropriate `packages` list
 
 Fedora entries such as `/usr/bin/curl` and `/usr/bin/ffplay` let dnf choose the package providing that executable, while keeping a compatible installed provider.
 
-Every plugin is fetched from its repository at the selected revision. This repository contains the installer and defaults, not plugin source. Colors, Alerts, Layouts, Sessions, Doomface, and Sidebar Menu can each be enabled independently.
+Every plugin is fetched from its repository at the selected revision. This repository contains the installer and defaults, not plugin source. Colors, Alerts, Layouts, Sessions, Doomface, Repo Journal, and Sidebar Menu can each be enabled independently. Repo Journal needs **Node 20+** on PATH at runtime (bundled CLI in the plugin checkout).
 
 Optional entry fields: `shell` names the plugin's zsh integration file; `shell_bash` names its bash integration file; `config` names its default configuration file. All are paths relative to the plugin root. Shell integration checks Herdr's enabled-plugin registry whenever a new shell starts.
 

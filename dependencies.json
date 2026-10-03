@@ -31,7 +31,7 @@
       "repository": "alexarthurs/herdr-sidebar",
       "subdir": "plugins/herdr-sidebar",
       "ref": "ee47651974bd1cc0fc7e3bd182dbfaf151b3c243",
-      "enabled": true
+      "enabled": false
     },
     {
       "id": "nicosuave.memex",
@@ -62,7 +62,7 @@
       "name": "Herdr Colors",
       "repository": "ariel-ps/herdr-colors",
       "subdir": "",
-      "ref": "0b772fef688f13394013383a2a96ce7663767e2b",
+      "ref": "8f6bf3d612303d37963f77ed07300d2f7ef25c28",
       "enabled": true,
       "shell": "shell.zsh",
       "shell_bash": "shell.bash"
@@ -109,12 +109,22 @@
       "config": "config.sh"
     },
     {
+      "id": "dev.ariel.repo-journal",
+      "name": "Repo Journal",
+      "repository": "ariel-ps/repo-journal",
+      "subdir": "",
+      "ref": "9302a945d1ea6535a0e5bd5afbd7370377762dcc",
+      "enabled": true,
+      "shell": "shell.zsh",
+      "shell_bash": "shell.bash"
+    },
+    {
       "id": "dev.ariel.herdr-sidebar-menu",
       "name": "Herdr Sidebar Menu",
       "repository": "ariel-ps/herdr-sidebar-menu",
       "subdir": "",
       "ref": "2478c95df4d4c349493b17eab27a02834e94cf8a",
-      "enabled": true
+      "enabled": false
     }
   ],
   "packages": {

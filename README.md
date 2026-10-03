@@ -13,8 +13,9 @@ A ready-to-use [Herdr](https://github.com/herdrdev/herdr) environment for runnin
 | Saved pane layouts and agent grids | [Layouts](https://github.com/ariel-ps/herdr-layouts) |
 | Agent inspection and session naming | [Sessions](https://github.com/ariel-ps/herdr-sessions) |
 | A Doom face that reflects Claude's context usage | [Doomface](https://github.com/ariel-ps/herdr-doomface) |
+| Git-root investigation scratch notes in `.journal/` | [Repo Journal](https://github.com/ariel-ps/repo-journal) (generic tool, installed via setup) |
 
-Also includes Herdr Plus, Board, Grid, Sidebar, memex, Plugin Manager, Terminal Code, and a [sidebar menu toggle](https://github.com/ariel-ps/herdr-sidebar-menu). Each plugin can be enabled independently in [`dependencies.json`](dependencies.json).
+Also includes Herdr Plus, Board, Grid, memex, Plugin Manager, and Terminal Code. Sidebar and its menu toggle are disabled by default. Each plugin can be enabled independently in [`dependencies.json`](dependencies.json).
 
 ## Install
 
