@@ -77,20 +77,20 @@ Launch an installed coding agent with `claude-danger`, `codex-danger`,
 prompts and forward your arguments. Install and sign into the agent CLI first;
 [shortcut details](https://github.com/ariel-ps/herdr-sessions#agent-shortcuts).
 
-Test the bundled alert tone without downloading a sound pack:
+Preview the bundled tone, flash, and sprite without downloading a pack:
 
 ```sh
-herdr-sound play
+herdr-alert play
 ```
 
 | Sound command | What it does |
 | --- | --- |
-| `herdr-sound status` | Show alert settings and playback dependencies |
-| `herdr-sound list` | List sound choices |
-| `herdr-sound download mario` | Download the optional Mario pack |
-| `herdr-sound set done 1up` | Use the downloaded `1up` sound for completed agents |
-| `herdr-sound disable` | Mute automatic sound alerts |
-| `herdr-sound enable` | Enable automatic sound alerts |
+| `herdr-alert status` | Show alert settings and playback dependencies |
+| `herdr-alert list` | List sound choices |
+| `herdr-alert download mario` | Download the optional Mario pack |
+| `herdr-alert set done 1up` | Use the downloaded `1up` sound for completed agents |
+| `herdr-alert disable` | Mute automatic sound alerts |
+| `herdr-alert enable` | Enable automatic sound alerts |
 
 [Full sound guide](https://github.com/ariel-ps/herdr-alerts#commands)
 

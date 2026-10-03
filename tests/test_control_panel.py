@@ -60,7 +60,7 @@ else:
     sys.exit(int(os.environ.get('TEST_EXIT', '0')))
 ''')
             tool.chmod(0o755)
-            sound = root / 'herdr-sound'
+            sound = root / 'herdr-alert'
             sound.write_bytes(tool.read_bytes())
             sound.chmod(0o755)
             plugins = root / 'plugins.json'

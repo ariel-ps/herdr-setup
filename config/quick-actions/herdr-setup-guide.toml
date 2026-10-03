@@ -29,7 +29,7 @@ description = "herdr-layout-save NAME; herdr-layout-up NAME restores it."
 
 [[options]]
 label = "Sound settings"
-description = "Use the Sound and visual alerts menu, or herdr-sound --help."
+description = "Use the Sound and visual alerts menu, or herdr-alert --help."
 
 [[options]]
 label = "Sprites"

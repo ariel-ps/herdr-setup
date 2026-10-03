@@ -3,11 +3,11 @@ description = "Preview a sound, mute alerts, or change flash and sprite settings
 command = '''
 sh -c 'export PATH="$HOME/.local/bin:$PATH"
 case "$1" in
-  status|list|play|enable|disable) herdr-sound "$1" ;;
-  flash-on) herdr-sound set flash on ;;
-  flash-off) herdr-sound set flash off ;;
-  sprite-on) herdr-sound set sprite on ;;
-  sprite-off) herdr-sound set sprite off ;;
+  status|list|play|enable|disable) herdr-alert "$1" ;;
+  flash-on) herdr-alert set flash on ;;
+  flash-off) herdr-alert set flash off ;;
+  sprite-on) herdr-alert set sprite on ;;
+  sprite-off) herdr-alert set sprite off ;;
   *) printf '"'"'Unknown sound setting\n'"'"' >&2; exit 2 ;;
 esac
 
@@ -27,7 +27,7 @@ description = "Show sound, flash, sprite and playback settings."
 [[options]]
 label = "Preview alert"
 value = "play"
-description = "Play the configured alert."
+description = "Preview the included tone with your flash and sprite settings."
 
 [[options]]
 label = "Available sounds"
@@ -57,9 +57,9 @@ description = "Disable screen flashes."
 [[options]]
 label = "Sprite on"
 value = "sprite-on"
-description = "Show sprites on blocked-agent alerts."
+description = "Show sprites in previews and blocked-agent alerts."
 
 [[options]]
 label = "Sprite off"
 value = "sprite-off"
-description = "Hide blocked-agent sprites."
+description = "Hide sprites in previews and blocked-agent alerts."
