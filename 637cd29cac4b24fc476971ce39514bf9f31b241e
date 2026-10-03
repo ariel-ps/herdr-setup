@@ -1,0 +1,23 @@
+dependencies.json
+  37cdea2bc419c064 86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "2.0.0",
+  "base_commit_sha": "637cd29cac4b24fc476971ce39514bf9f31b241e",
+  "prompts": {
+    "37cdea2bc419c064": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "63760873-492d-4aea-9e9f-c9a70eaefd5c",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "ariel-ps <ariel@prompt.security>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
