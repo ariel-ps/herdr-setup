@@ -28,9 +28,6 @@ if [[ $- == *i* && ${_HERDR_FOLDER_TOOLS_LOADED:-} != 1 ]]; then
       fi
     fi
   fi
-  if command -v zoxide >/dev/null 2>&1 && ! command -v z >/dev/null 2>&1; then
-    eval "$(zoxide init "$_herdr_tool_shell")"
-  fi
   if command -v eza >/dev/null 2>&1; then
     alias ls >/dev/null 2>&1 || typeset -f ls >/dev/null 2>&1 || alias ls='eza'
     alias ll >/dev/null 2>&1 || typeset -f ll >/dev/null 2>&1 || alias ll='eza -la'

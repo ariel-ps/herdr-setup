@@ -16,7 +16,7 @@ A ready-to-use [Herdr](https://github.com/herdrdev/herdr) environment for runnin
 | A Doom face that reflects Claude's context usage | [Doomface](https://github.com/ariel-ps/herdr-doomface) |
 | Git-root investigation scratch notes in `.journal/` | [Journal Repo](https://github.com/ariel-ps/repo-journal) (`journal-repo` CLI, installed via setup) |
 | Git popup with highlighted diffs and colored agent branches | Lazygit + delta |
-| Jump to projects with `z` and pick a folder with `zi` | zoxide + fzf |
+| fzf in the shell (history, paths) | fzf |
 
 Also includes Herdr Plus, Board, Grid, memex, Plugin Manager, and Terminal Code. Sidebar and its menu toggle are disabled by default. Each plugin can be enabled independently in [`dependencies.json`](dependencies.json).
 
@@ -70,7 +70,7 @@ Or run `herdr plugin action invoke cloudmanic.herdr-plus.quick-actions`. Herdr 0
 
 In a repository, press **Cmd+Shift+G** or **prefix+d** to open Lazygit; press **q** to close it. The default prefix is Ctrl+B. You can also run `lazygit` directly.
 
-Visit a project once with `cd`, then use `z project` to return or `zi` to choose from visited folders. Interactive shells also get `ls`, `ll`, and `tree` through eza, and `cat` through bat; existing aliases are preserved.
+Interactive shells get fzf key bindings, `ls`, `ll`, and `tree` through eza, and `cat` through bat; existing aliases are preserved. Project jumps come from your own shell config (for example dev-env `goto_*` helpers), not from Herdr Setup.
 
 Launch an installed coding agent with `claude-danger`, `codex-danger`,
 `cursor-danger`, or `deepcode-danger`. These shortcuts bypass agent permission

@@ -62,11 +62,6 @@ class InstallTests(unittest.TestCase):
                 tool = tools / name
                 tool.write_text('#!/bin/sh\nexit 0\n')
                 tool.chmod(0o755)
-            tool = tools / 'zoxide'
-            tool.write_text(r'''#!/bin/sh
-printf '%s\n' 'z() { builtin cd "$@"; }' 'zi() { :; }'
-''')
-            tool.chmod(0o755)
             for shell in ('bash', 'zsh'):
                 executable = shutil.which(shell)
                 result = subprocess.run([executable, '-fic', '''
@@ -76,10 +71,7 @@ source "$1"
 source "$1"
 [[ $BAT_THEME == custom && $FZF_DEFAULT_COMMAND == fdfind* ]] || exit 2
 [[ $(alias ll) == *preserved* && $(alias cat) == *batcat* ]] || exit 3
-z "$2" || exit 4
-[[ $PWD == "$2" ]] || exit 5
-command -v zi
-''', 'check', str(ROOT / 'config/shell-tools.sh'), str(root)],
+''', 'check', str(ROOT / 'config/shell-tools.sh')],
                     env={**os.environ, 'HOME': temp, 'ZDOTDIR': temp, 'PATH': str(tools),
                          'FZF_DEFAULT_COMMAND': '', '_HERDR_FOLDER_TOOLS_LOADED': ''},
                     capture_output=True, text=True)

@@ -31,7 +31,7 @@ To add a system prerequisite, append its name to the appropriate `packages` list
 
 Fedora entries such as `/usr/bin/curl` and `/usr/bin/ffplay` let dnf choose the package providing that executable, while keeping a compatible installed provider.
 
-Navigation uses zoxide, fzf, eza, bat, and fd. Ubuntu/Debian name the last two executables `batcat` and `fdfind`; the shell loader handles these names. Lazygit uses delta for diffs. Homebrew supplies Lazygit on macOS; on Linux, the pinned `tools.lazygit.command` builds it with Go into `~/.local/bin`, without adding a package repository. Change that version in this manifest to select a different release for new installations. Existing executables are kept.
+Navigation helpers in the shell loader use fzf, eza, bat, and fd. Ubuntu/Debian name the last two executables `batcat` and `fdfind`; the shell loader handles these names. Lazygit uses delta for diffs. Homebrew supplies Lazygit on macOS; on Linux, the pinned `tools.lazygit.command` builds it with Go into `~/.local/bin`, without adding a package repository. Change that version in this manifest to select a different release for new installations. Existing executables are kept.
 
 [Treehouse](https://github.com/kunchenguid/treehouse) (required by Journal Repo) is installed from upstream release binaries via `tools.treehouse.url`, not `go install`, because v3 tags still declare a pre–Go-module-v3 `go.mod` path and `go install` fails with “module path must match major version”.
 

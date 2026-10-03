@@ -3,6 +3,12 @@
 # Keep execution inside a function so a truncated download cannot start it.
 herdr_setup_main() {
     set -eu
+    if [ "$(uname -s)" = Darwin ]; then
+        for setup_brew in /opt/homebrew/bin /opt/homebrew/sbin /usr/local/bin; do
+            [ -d "$setup_brew" ] || continue
+            case ":${PATH}:" in *":$setup_brew:"*) ;; *) PATH="$setup_brew:$PATH" ;; esac
+        done
+    fi
     export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
     setup_root=''
     case "$0" in

@@ -21,7 +21,7 @@ description = "New workspaces add a board tab; rename any idle tab to board too.
 
 [[options]]
 label = "Folders"
-description = "Visit with cd once; z name returns; zi picks a visited folder."
+description = "Use goto_* helpers from dev-env or cd; fzf binds Ctrl+R and Ctrl+T in the shell loader."
 
 [[options]]
 label = "Save a layout"

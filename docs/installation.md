@@ -72,8 +72,7 @@ The defaults follow Datalumina's [Lazygit](https://learn.datalumina.com/docs/her
 
 - **Cmd+Shift+G** or **prefix+d** opens Lazygit in the focused pane's directory. Press **q** to close it. Linux users can use prefix+d; the default prefix is Ctrl+B.
 - Lazygit uses a compact file view, agent branch colors, and delta's TwoDark syntax highlighting. Press `|` to switch to word-level diffs. Its config is installed only when missing.
-- After visiting a directory with `cd`, use `z name` to return or `zi` to search visited directories with fzf.
-- Interactive shells initialize zoxide and fzf, including older distro fzf versions. eza supplies `ls`, `ll`, and `tree`; bat supplies `cat`. Existing aliases, functions, `BAT_THEME`, and fzf settings take precedence.
+- Interactive shells initialize fzf, including older distro fzf versions. eza supplies `ls`, `ll`, and `tree`; bat supplies `cat`. Existing aliases, functions, `BAT_THEME`, and fzf settings take precedence.
 
 The shell loader contains these helpers, so removing the downloaded installer does not break them. `--no-shell` still generates the loader but leaves startup files unchanged. Open a new shell to load updated helpers. Icons require a Nerd Font in your terminal; terminal and font installation remain your choice.
 
