@@ -68,7 +68,7 @@ The shell loader contains these helpers, so removing the downloaded installer do
 
 ## Control panel
 
-Herdr Plus supplies a mouse-driven overlay with search, descriptions, and keyboard navigation. Choose **Control panel** in Herdr’s plugin actions or pane, tab, and workspace context menus. The menu shortcut is provided by Layouts and opens Herdr Plus Quick Actions. You can also use **prefix+Down** with the default configuration. Click or press Enter to select; Esc goes back or closes the panel.
+Herdr Plus supplies a mouse-driven overlay with search, descriptions, and keyboard navigation. Open it with **prefix+Down** (Ctrl+B then Down by default), or run `herdr plugin action invoke cloudmanic.herdr-plus.quick-actions`. Herdr 0.9.3 does not display plugin actions in its sidebar or right-click menus. Click or press Enter to select; Esc goes back or closes the panel.
 
 Setup adds five menus: Tools (Git, Neovim, Board, and Grid), Sound and visual alerts, Plugin actions, Installed plugins, and Quick guide. Plugin actions reads the live plugin registry each time and includes only enabled actions for your operating system. Installed plugins opens the existing Plugin Manager for plugin state and management.
 

@@ -64,7 +64,9 @@ herdr
 
 New panes receive their colors automatically. If Herdr is already running, reload its configuration through the menu.
 
-Choose **Control panel** from Herdr’s plugin actions menu or the pane, tab, or workspace context menu. You can also press **prefix+Down** (by default, Ctrl+B then Down). Click a row or type to search: **Tools**, **Sound and visual alerts**, **Plugin actions**, **Installed plugins**, or **Quick guide**. New enabled plugins appear automatically in Plugin actions. You can also open **Herdr Plus: Quick Actions** from Herdr's plugin menu.
+Press **prefix+Down** (by default, Ctrl+B then Down) to open the control panel. Click a row or type to search: **Tools**, **Sound and visual alerts**, **Plugin actions**, **Installed plugins**, or **Quick guide**. New enabled plugins appear automatically in Plugin actions.
+
+Or run `herdr plugin action invoke cloudmanic.herdr-plus.quick-actions`. Herdr 0.9.3 does not display plugin actions in its sidebar or right-click menus.
 
 In a repository, press **Cmd+Shift+G** or **prefix+d** to open Lazygit; press **q** to close it. The default prefix is Ctrl+B. You can also run `lazygit` directly.
 

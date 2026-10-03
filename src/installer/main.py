@@ -345,7 +345,7 @@ def main(argv=None):
     message('OK', 'Plugins and shell integration are ready.', color='32')
     detail('Next', f'Open a new {shell}, then run herdr.')
     if any(p['id'] == 'cloudmanic.herdr-plus' and p.get('enabled', True) for p in lock['plugins']):
-        detail('Control panel', 'Herdr Plus: Quick Actions in the plugin menu; default shortcut prefix+down.')
+        detail('Control panel', 'Press prefix+down, or run herdr plugin action invoke cloudmanic.herdr-plus.quick-actions.')
     detail('Git popup', 'Cmd+Shift+G or prefix+d; q closes it.')
     detail('Folders', 'Visit a project once with cd, then use z <name> or zi.')
     detail('Existing Herdr session', 'Reload its configuration through the menu.')
