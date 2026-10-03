@@ -1,8 +1,13 @@
 import importlib.util
+import json
+import os
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
+from unittest import mock
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('uninstall', ROOT / 'src/installer/uninstall.py')
@@ -24,6 +29,11 @@ class UninstallShellTests(unittest.TestCase):
         self.assertFalse(removed)
         self.assertEqual(text, 'plain\n')
 
+    def test_strip_block_rejects_reversed_markers(self):
+        original = f"tail\n{installer.END}\n{installer.BEGIN}\nsource x\n"
+        with self.assertRaises(ValueError):
+            uninstall.strip_block(original, installer.BEGIN, installer.END)
+
     def test_remove_shell_blocks_writes_file(self):
         with tempfile.TemporaryDirectory() as temp:
             rc = Path(temp) / '.zshrc'
@@ -33,6 +43,55 @@ class UninstallShellTests(unittest.TestCase):
             changed = uninstall.remove_shell_blocks([rc], include_tools=False)
             self.assertEqual(changed, [rc])
             self.assertEqual(rc.read_text(), 'keep\n')
+
+
+class UninstallPluginTests(unittest.TestCase):
+    @patch.object(uninstall.subprocess, 'run')
+    @patch.object(uninstall.shutil, 'which', return_value='/usr/bin/herdr')
+    def test_uninstall_skips_missing_plugins(self, _which, run):
+        listing = json.dumps({'result': {'plugins': [{'id': 'a.example'}]}})
+        run.side_effect = [
+            mock.Mock(stdout=listing),
+            mock.Mock(returncode=0),
+        ]
+        removed = uninstall.uninstall_plugins(['a.example', 'b.missing'])
+        self.assertEqual(removed, 1)
+        self.assertEqual(run.call_count, 2)
+        self.assertEqual(run.call_args_list[1].args[0], ['herdr', 'plugin', 'uninstall', 'a.example'])
+
+
+class ResolveManifestTests(unittest.TestCase):
+    def test_prefers_newer_checkout_manifest_over_cache(self):
+        with tempfile.TemporaryDirectory() as temp:
+            checkout = Path(temp) / 'checkout'
+            data = Path(temp) / 'data'
+            checkout.mkdir()
+            (data / 'herdr-setup').mkdir(parents=True)
+            bundled = checkout / 'dependencies.json'
+            cached = data / 'herdr-setup' / 'dependencies.json'
+            bundled.write_text('{"checkout": true}')
+            cached.write_text('{"cached": true}')
+            base = time.time() - 10
+            os.utime(cached, (base, base))
+            os.utime(bundled, (base + 5, base + 5))
+            with patch.object(uninstall, 'ROOT', checkout), patch.dict(os.environ, {'XDG_DATA_HOME': str(data)}):
+                self.assertEqual(uninstall.resolve_manifest(None), bundled.resolve())
+
+    def test_prefers_cache_when_it_is_newer_than_checkout(self):
+        with tempfile.TemporaryDirectory() as temp:
+            checkout = Path(temp) / 'checkout'
+            data = Path(temp) / 'data'
+            checkout.mkdir()
+            (data / 'herdr-setup').mkdir(parents=True)
+            bundled = checkout / 'dependencies.json'
+            cached = data / 'herdr-setup' / 'dependencies.json'
+            bundled.write_text('{}')
+            cached.write_text('{}')
+            base = time.time() - 10
+            os.utime(bundled, (base, base))
+            os.utime(cached, (base + 5, base + 5))
+            with patch.object(uninstall, 'ROOT', checkout), patch.dict(os.environ, {'XDG_DATA_HOME': str(data)}):
+                self.assertEqual(uninstall.resolve_manifest(None), cached.resolve())
 
 
 if __name__ == '__main__':

@@ -23,6 +23,8 @@ def strip_block(text: str, begin: str, end: str) -> tuple[str, bool]:
         return text, False
     start = text.index(begin)
     finish = text.index(end) + len(end)
+    if finish < start:
+        raise ValueError(f'Reversed setup block ({begin!r}); fix the file manually.')
     tail = text[finish:]
     if tail.startswith('\n'):
         finish += 1
@@ -40,11 +42,16 @@ def resolve_manifest(explicit: Path | None) -> Path:
         return path
     data = Path(os.environ.get('XDG_DATA_HOME', str(Path.home() / '.local/share'))).expanduser()
     cached = data / 'herdr-setup' / 'dependencies.json'
-    if cached.is_file():
-        return cached
     bundled = ROOT / 'dependencies.json'
+    if cached.is_file() and bundled.is_file():
+        # After install the cache matches the checkout; prefer whichever was updated last.
+        if bundled.stat().st_mtime > cached.stat().st_mtime:
+            return bundled.resolve()
+        return cached.resolve()
+    if cached.is_file():
+        return cached.resolve()
     if bundled.is_file():
-        return bundled
+        return bundled.resolve()
     raise ValueError(
         'Cannot find dependencies.json (set --manifest or run from a herdr-setup checkout).'
     )
@@ -70,12 +77,31 @@ def enabled_plugin_ids(manifest_path: Path) -> list[str]:
     return [p['id'] for p in lock['plugins'] if p.get('enabled', True)]
 
 
-def uninstall_plugins(ids: list[str]) -> None:
+def installed_plugin_ids() -> set[str]:
+    output = subprocess.run(
+        ['herdr', 'plugin', 'list', '--json'],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    payload = json.loads(output)
+    return {plugin['id'] for plugin in payload['result']['plugins']}
+
+
+def uninstall_plugins(ids: list[str]) -> int:
     if not shutil.which('herdr'):
         raise ValueError('herdr is not on PATH; cannot uninstall plugins.')
+    installed = installed_plugin_ids()
+    removed = 0
     for plugin_id in ids:
+        if plugin_id not in installed:
+            message('SKIP', f'{plugin_id} (not installed)')
+            continue
         message('UNINSTALL', plugin_id)
         subprocess.run(['herdr', 'plugin', 'uninstall', plugin_id], check=True)
+        installed.discard(plugin_id)
+        removed += 1
+    return removed
 
 
 def main(argv=None) -> int:
@@ -133,8 +159,8 @@ def main(argv=None) -> int:
         else:
             section('Plugins')
             detail('Manifest', manifest)
-            uninstall_plugins(ids)
-            message('OK', f'Uninstalled {len(ids)} plugin(s).', color='32')
+            removed = uninstall_plugins(ids)
+            message('OK', f'Uninstalled {removed} plugin(s).', color='32')
 
     detail('Note', 'System packages (brew/apt), Herdr, and ~/.config/herdr are unchanged.')
     detail('Next', 'Open a new shell.')
