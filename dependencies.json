@@ -182,6 +182,7 @@
       "perl-interpreter",
       "perl-MIME-Base64",
       "perl-JSON-PP",
+      "perl-Time-HiRes",
       "unzip",
       "xz",
       "tar",
