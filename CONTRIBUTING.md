@@ -10,6 +10,13 @@ shellcheck install.sh tests/desktop/*.sh
 
 Dependency changes belong in `dependencies.json`. Plugin changes belong in their individual repositories; update the corresponding `ref` after pushing a change. Keep runtime files independent of checkout locations and use HOME/XDG paths.
 
+First-party plugins follow the [plugin repository structure](docs/plugin-structure.md).
+Validate one or more checkouts from this repository with:
+
+```sh
+python3 scripts/validate-plugin-layout.py ../herdr-alerts ../herdr-colors
+```
+
 ## Clean Linux desktop
 
 With Docker and Docker Compose available:
