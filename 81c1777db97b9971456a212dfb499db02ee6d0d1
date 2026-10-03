@@ -1,0 +1,31 @@
+docs/installation.md
+  37cdea2bc419c064 24-34
+src/installer/main.py
+  37cdea2bc419c064 374
+tests/test_uninstall.py
+  37cdea2bc419c064 1-39
+uninstall.sh
+  37cdea2bc419c064 1-12
+src/installer/uninstall.py
+  37cdea2bc419c064 1-149
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "2.0.0",
+  "base_commit_sha": "81c1777db97b9971456a212dfb499db02ee6d0d1",
+  "prompts": {
+    "37cdea2bc419c064": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "63760873-492d-4aea-9e9f-c9a70eaefd5c",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "ariel-ps <ariel@prompt.security>",
+      "messages": [],
+      "total_additions": 212,
+      "total_deletions": 0,
+      "accepted_lines": 212,
+      "overriden_lines": 0
+    }
+  }
+}
