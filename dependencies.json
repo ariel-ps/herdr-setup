@@ -93,7 +93,7 @@
       "name": "Herdr Sessions",
       "repository": "ariel-ps/herdr-sessions",
       "subdir": "",
-      "ref": "aea2033022b6ea10ed0a484a6a10a7c83ce6c2de",
+      "ref": "976824ffa3c89522e79da73febfd11984945856f",
       "enabled": true,
       "shell": "shell.zsh",
       "shell_bash": "shell.bash",

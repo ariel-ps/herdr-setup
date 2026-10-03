@@ -12,7 +12,7 @@ A ready-to-use [Herdr](https://github.com/herdrdev/herdr) environment for runnin
 | A distinct color palette for each pane | [Colors](https://github.com/ariel-ps/herdr-colors) |
 | Sound and flash alerts when agents finish or need input | [Alerts](https://github.com/ariel-ps/herdr-alerts) |
 | Saved pane layouts, agent grids, and automatic `code` and `board` tabs | [Layouts](https://github.com/ariel-ps/herdr-layouts) |
-| Agent inspection and session naming | [Sessions](https://github.com/ariel-ps/herdr-sessions) |
+| Agent launch shortcuts, inspection, and session naming | [Sessions](https://github.com/ariel-ps/herdr-sessions) |
 | A Doom face that reflects Claude's context usage | [Doomface](https://github.com/ariel-ps/herdr-doomface) |
 | Git-root investigation scratch notes in `.journal/` | [Repo Journal](https://github.com/ariel-ps/repo-journal) (generic tool, installed via setup) |
 | Git popup with highlighted diffs and colored agent branches | Lazygit + delta |
@@ -71,6 +71,11 @@ Or run `herdr plugin action invoke cloudmanic.herdr-plus.quick-actions`. Herdr 0
 In a repository, press **Cmd+Shift+G** or **prefix+d** to open Lazygit; press **q** to close it. The default prefix is Ctrl+B. You can also run `lazygit` directly.
 
 Visit a project once with `cd`, then use `z project` to return or `zi` to choose from visited folders. Interactive shells also get `ls`, `ll`, and `tree` through eza, and `cat` through bat; existing aliases are preserved.
+
+Launch an installed coding agent with `claude-danger`, `codex-danger`,
+`cursor-danger`, or `deepcode-danger`. These shortcuts bypass agent permission
+prompts and forward your arguments. Install and sign into the agent CLI first;
+[shortcut details](https://github.com/ariel-ps/herdr-sessions#agent-shortcuts).
 
 Test the bundled alert tone without downloading a sound pack:
 
