@@ -272,10 +272,62 @@ command -v zi
             root = Path(temp)
             registry = root / 'plugins.json'
             registry.write_text(json.dumps([{'plugin_id': 'example', 'source': {'managed_path': temp}}]))
-            with patch.object(installer, 'run', return_value=' M user-file') as run:
+            commit = 'a' * 40
+
+            def fake_run(*args, **kwargs):
+                if args[:3] == ('git', 'rev-parse', 'HEAD'):
+                    return commit
+                if args[:3] == ('git', 'status', '--porcelain'):
+                    return ' M user-file'
+                return None
+
+            with patch.object(installer, 'run', side_effect=fake_run):
                 with self.assertRaisesRegex(ValueError, 'local changes'):
-                    installer.install_plugins({'plugins': [{'id': 'example'}]}, registry)
-                run.assert_called_once_with('git', 'status', '--porcelain', cwd=temp, capture=True)
+                    installer.install_plugins({'plugins': [{'id': 'example', 'commit': commit}]}, registry)
+
+    def test_plugin_build_artifacts_do_not_block_reinstall(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / 'herdr-plugin.toml').write_text('id = "example"\n')
+            registry = root / 'plugins.json'
+            registry.write_text(json.dumps([{
+                'plugin_id': 'example',
+                'enabled': True,
+                'plugin_root': temp,
+                'source': {'managed_path': temp, 'resolved_commit': 'b' * 40},
+            }]))
+            commit = 'a' * 40
+
+            def fake_run(*args, **kwargs):
+                if args[:3] == ('git', 'rev-parse', 'HEAD'):
+                    return commit
+                if args[:3] == ('git', 'status', '--porcelain'):
+                    return ' M libexec/tool\n?? target/debug/foo'
+                return None
+
+            with patch.object(installer, 'github_environment', return_value={}), \
+                 patch.object(installer, 'run', side_effect=fake_run) as run:
+                installer.install_plugins({'plugins': [{
+                    'id': 'example', 'repository': 'owner/repo', 'subdir': '', 'commit': commit,
+                }]}, registry)
+                self.assertIn(('herdr', 'plugin', 'install'), [c.args[:3] for c in run.call_args_list])
+
+    def test_local_linked_plugin_skips_github_install(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / 'herdr-plugin.toml').write_text('id = "example"\n')
+            registry = root / 'plugins.json'
+            registry.write_text(json.dumps([{
+                'plugin_id': 'example',
+                'enabled': True,
+                'plugin_root': temp,
+                'source': {'kind': 'local'},
+            }]))
+            with patch.object(installer, 'run') as run:
+                installer.install_plugins({'plugins': [{
+                    'id': 'example', 'repository': 'owner/repo', 'subdir': '', 'commit': 'a' * 40,
+                }]}, registry)
+                self.assertFalse(any(c.args[:3] == ('herdr', 'plugin', 'install') for c in run.call_args_list))
 
 
 if __name__ == '__main__':

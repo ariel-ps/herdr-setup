@@ -206,6 +206,31 @@ def shell_settings(requested):
     return shell, executable, files
 
 
+def _porcelain_path(line: str) -> str:
+    path = line[3:].strip()
+    if path.startswith('"') and path.endswith('"'):
+        path = path[1:-1]
+    if ' -> ' in path:
+        path = path.split(' -> ', 1)[1].strip().strip('"')
+    return path.removeprefix('./')
+
+
+def _ignored_build_artifact(path: str) -> bool:
+    return path == 'target' or path.startswith('target/') or path == 'libexec' or path.startswith('libexec/')
+
+
+def plugin_has_blocking_local_changes(managed: Path) -> bool:
+    porcelain = run('git', 'status', '--porcelain', cwd=managed, capture=True)
+    if not porcelain:
+        return False
+    for line in porcelain.splitlines():
+        if not line.strip():
+            continue
+        if not _ignored_build_artifact(_porcelain_path(line)):
+            return True
+    return False
+
+
 def install_plugins(lock, registry_path):
     installed = json.loads(registry_path.read_text()) if registry_path.exists() else []
     by_id = {p['plugin_id']: p for p in installed}
@@ -227,15 +252,21 @@ def install_plugins(lock, registry_path):
         managed = source.get('managed_path')
         intact = False
         if managed and Path(managed).is_dir():
-            if run('git', 'status', '--porcelain', cwd=managed, capture=True):
-                raise ValueError(f"Plugin has local changes: {managed}. Preserve/move it before reinstalling.")
             intact = run('git', 'rev-parse', 'HEAD', cwd=managed, capture=True) == plugin['commit']
+        if (source.get('kind') == 'local' and root.is_dir()
+                and (root / 'herdr-plugin.toml').is_file()):
+            if not old.get('enabled'):
+                run('herdr', 'plugin', 'enable', plugin['id'])
+            message(progress, f'{name} - ready (local)', color='32')
+            continue
         if (source.get('resolved_commit') == plugin['commit'] and intact
                 and (root / 'herdr-plugin.toml').is_file()):
             if not old.get('enabled'):
                 run('herdr', 'plugin', 'enable', plugin['id'])
             message(progress, f'{name} - ready', color='32')
             continue
+        if managed and Path(managed).is_dir() and plugin_has_blocking_local_changes(Path(managed)):
+            raise ValueError(f"Plugin has local changes: {managed}. Preserve/move it before reinstalling.")
         spec = plugin['repository'] + ('/' + plugin['subdir'] if plugin['subdir'] else '')
         if auth_env is None:
             auth_env = github_environment()

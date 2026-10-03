@@ -35,7 +35,9 @@ Navigation uses zoxide, fzf, eza, bat, and fd. Ubuntu/Debian name the last two e
 
 The package lists are tested with Ubuntu 24.04 and Fedora 44; use Debian 13 or newer for the listed navigation packages. The pinned Lazygit build needs Go 1.25; Go 1.21+ automatically downloads the required toolchain when needed.
 
-Every plugin is fetched from its repository at the selected revision. This repository contains the installer and defaults, not plugin source. Colors, Alerts, Layouts, Sessions, Doomface, Repo Journal, and Sidebar Menu can each be enabled independently. Repo Journal ships a committed Rust binary in `libexec/` (rebuild needs Cargo).
+Every plugin is fetched from its repository at the selected revision. This repository contains the installer and defaults, not plugin source. Colors, Alerts, Layouts, Sessions, Doomface, Repo Journal, and Sidebar Menu can each be enabled independently. Repo Journal builds a Rust binary into `libexec/` on install (ignored for git cleanliness checks).
+
+If a plugin is already linked from a **local path** in Herdr, setup keeps that checkout and does not replace it with the GitHub pin.
 
 Optional entry fields: `shell` names the plugin's zsh integration file; `shell_bash` names its bash integration file; `config` names its default configuration file. All are paths relative to the plugin root. Shell integration checks Herdr's enabled-plugin registry whenever a new shell starts.
 
