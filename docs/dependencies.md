@@ -33,6 +33,8 @@ Fedora entries such as `/usr/bin/curl` and `/usr/bin/ffplay` let dnf choose the 
 
 Navigation uses zoxide, fzf, eza, bat, and fd. Ubuntu/Debian name the last two executables `batcat` and `fdfind`; the shell loader handles these names. Lazygit uses delta for diffs. Homebrew supplies Lazygit on macOS; on Linux, the pinned `tools.lazygit.command` builds it with Go into `~/.local/bin`, without adding a package repository. Change that version in this manifest to select a different release for new installations. Existing executables are kept.
 
+[Treehouse](https://github.com/kunchenguid/treehouse) (required by Journal Repo) is installed from upstream release binaries via `tools.treehouse.url`, not `go install`, because v3 tags still declare a pre–Go-module-v3 `go.mod` path and `go install` fails with “module path must match major version”.
+
 The package lists are tested with Ubuntu 24.04 and Fedora 44; use Debian 13 or newer for the listed navigation packages. The pinned Lazygit build needs Go 1.25; Go 1.21+ automatically downloads the required toolchain when needed.
 
 Every plugin is fetched from its repository at the selected revision. This repository contains the installer and defaults, not plugin source. Colors, Alerts, Layouts, Sessions, Doomface, Journal Repo, and Sidebar Menu can each be enabled independently. Journal Repo builds the `journal-repo` Rust binary into `libexec/` on install (ignored for git cleanliness checks).

@@ -236,13 +236,10 @@
     },
     "treehouse": {
       "check": "treehouse",
-      "command": [
-        "go",
-        "install",
-        "github.com/kunchenguid/treehouse/v3@v3.1.0"
-      ],
+      "url": "https://kunchenguid.github.io/treehouse/install.sh",
+      "args": [],
       "env": {
-        "GOBIN": "$HOME/.local/bin"
+        "PATH": "$HOME/.local/bin:$PATH"
       }
     }
   },
