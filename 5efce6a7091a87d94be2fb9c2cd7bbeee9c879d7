@@ -1,0 +1,35 @@
+config/quick-actions/herdr-setup-guide.toml
+  37cdea2bc419c064 24
+tests/test_install.py
+  37cdea2bc419c064 74
+docs/dependencies.md
+  37cdea2bc419c064 34
+src/installer/main.py
+  37cdea2bc419c064 143-169,176,178,407
+install.sh
+  37cdea2bc419c064 6-11
+README.md
+  37cdea2bc419c064 19,73
+docs/installation.md
+  37cdea2bc419c064 75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "2.0.0",
+  "base_commit_sha": "5efce6a7091a87d94be2fb9c2cd7bbeee9c879d7",
+  "prompts": {
+    "37cdea2bc419c064": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "63760873-492d-4aea-9e9f-c9a70eaefd5c",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "ariel-ps <ariel@prompt.security>",
+      "messages": [],
+      "total_additions": 45,
+      "total_deletions": 28,
+      "accepted_lines": 43,
+      "overriden_lines": 0
+    }
+  }
+}
