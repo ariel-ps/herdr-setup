@@ -17,6 +17,40 @@ spec.loader.exec_module(bootstrap)
 
 
 class BootstrapTests(unittest.TestCase):
+    def test_minimal_ubuntu_repairs_missing_fzf_shell_bindings(self):
+        manifest = {'packages': {'linux': ['fzf']}, 'tools': {}, 'herdr': {}}
+        with tempfile.TemporaryDirectory() as temp:
+            (Path(temp) / 'dependencies.json').write_text(json.dumps(manifest))
+            def command(args, **kwargs):
+                return SimpleNamespace(returncode=2 if args[0] == 'fzf' else 0, stdout='install ok installed')
+            with patch.dict(os.environ), patch.object(bootstrap, 'ROOT', Path(temp)), \
+                 patch.object(bootstrap.platform, 'system', return_value='Linux'), \
+                 patch.object(bootstrap.os, 'geteuid', return_value=0), \
+                 patch.object(bootstrap.shutil, 'which', return_value='/usr/bin/tool'), \
+                 patch.object(bootstrap.Path, 'is_file', return_value=False), \
+                 patch.object(bootstrap.subprocess, 'run', side_effect=command), \
+                 patch.object(bootstrap, 'run') as run, patch.object(bootstrap, 'install_herdr'):
+                bootstrap.main()
+                args = run.call_args.args
+                self.assertIn('--reinstall', args)
+                self.assertIn('Dpkg::Options::=--path-include=/usr/share/doc/fzf/examples/*', args)
+                self.assertEqual(args[-1], 'fzf')
+
+    def test_manifest_command_installs_missing_tool_with_scoped_environment(self):
+        manifest = {'packages': {'fedora': []}, 'tools': {'example': {
+            'check': 'example', 'command': ['go', 'install', 'example.org/tool@v1.0.0'],
+            'env': {'GOBIN': '$HOME/.local/bin'}}}, 'herdr': {}}
+        with tempfile.TemporaryDirectory() as temp:
+            (Path(temp) / 'dependencies.json').write_text(json.dumps(manifest))
+            with patch.dict(os.environ, {'HOME': temp}), patch.object(bootstrap, 'ROOT', Path(temp)), \
+                 patch.object(bootstrap.platform, 'system', return_value='Linux'), \
+                 patch.object(bootstrap.shutil, 'which', side_effect=lambda n: '/usr/bin/dnf' if n == 'dnf' else None), \
+                 patch.object(bootstrap, 'run') as run, patch.object(bootstrap, 'install_herdr'):
+                bootstrap.main()
+                self.assertEqual(run.call_args.args, ('go', 'install', 'example.org/tool@v1.0.0'))
+                self.assertEqual(run.call_args.kwargs['env']['GOBIN'], temp + '/.local/bin')
+                self.assertNotEqual(os.environ.get('GOBIN'), temp + '/.local/bin')
+
     def test_fedora_installs_missing_providers_and_uses_linux_binary(self):
         manifest = {'packages': {'fedora': ['/usr/bin/curl', 'jq']}, 'tools': {}, 'herdr': {'version': '0.9.3'}}
         for uid in [0, 1000]:

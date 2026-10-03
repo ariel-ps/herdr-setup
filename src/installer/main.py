@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 from datetime import datetime, timezone
 
 from output import detail, message, section
@@ -160,7 +161,31 @@ def shell_loader(lock, registry, shell='zsh'):
         shlex.quote(str(registry)) + ')\n'
         'fi\n'
         'unset plugin_script\n'
+        + (ROOT / 'config/shell-tools.sh').read_text()
     )
+
+
+def with_lazygit_popup(content):
+    """Add the popup without rewriting the user's TOML or taking an occupied key."""
+    snippet = (ROOT / 'config/lazygit-popup.toml').read_text()
+    binding = tomllib.loads(snippet)['keys']['command'][0]
+    keys = tomllib.loads(content).get('keys', {})
+    commands = keys.get('command', [])
+    if any('lazygit' in entry.get('command', '') for entry in commands):
+        return content
+    occupied = set()
+    for value in [v for k, v in keys.items() if k != 'command'] + [entry['key'] for entry in commands]:
+        occupied.update([value] if isinstance(value, str) else value)
+    if occupied.intersection(binding['key']):
+        message('KEEP', 'Lazygit shortcut conflicts with an existing binding; run lazygit directly.')
+        return content
+    updated = content.rstrip() + '\n\n' + snippet
+    try:
+        tomllib.loads(updated)
+    except tomllib.TOMLDecodeError:
+        message('KEEP', 'Custom key table cannot be extended; run lazygit directly.')
+        return content
+    return updated
 
 
 def shell_settings(requested):
@@ -260,7 +285,7 @@ def main(argv=None):
         return 0
     if platform.system() not in ('Darwin', 'Linux'):
         raise ValueError('This setup supports macOS and Linux.')
-    missing = [tool for tool in ['git', 'herdr', 'jq', 'zsh', 'uv'] if not shutil.which(tool)]
+    missing = [tool for tool in ['git', 'herdr', 'jq', 'zsh', 'uv', 'lazygit'] if not shutil.which(tool)]
     if missing:
         raise ValueError('Missing prerequisites: ' + ', '.join(missing) + '. Run ./install.sh to bootstrap them.')
     version = run('herdr', '--version', capture=True)
@@ -284,8 +309,15 @@ def main(argv=None):
     section('[3/4] Install plugins')
     install_plugins(lock, registry)
     section('[4/4] Configure your environment')
-    defaults = (ROOT / 'config/herdr.toml').read_text().replace('"@SHELL@"', json.dumps(shell_executable))
+    defaults = with_lazygit_popup((ROOT / 'config/herdr.toml').read_text().replace('"@SHELL@"', json.dumps(shell_executable)))
     configurations = [(config / 'config.toml', defaults)]
+    if os.environ.get('LG_CONFIG_FILE'):
+        message('KEEP', 'LG_CONFIG_FILE selects your own Lazygit configuration.')
+    else:
+        lazygit_directory = Path(run('lazygit', '--print-config-dir', capture=True))
+        if not lazygit_directory.is_absolute():
+            raise ValueError('Lazygit returned an invalid configuration directory')
+        configurations.append((lazygit_directory / 'config.yml', (ROOT / 'config/lazygit.yml').read_text()))
     installed = {p['plugin_id']: p for p in json.loads(registry.read_text())} if registry.exists() else {}
     legacy_config = config / 'plugins/config/dev.ariel.herdr-kit/config.sh'
     for item in lock['plugins']:
@@ -296,7 +328,10 @@ def main(argv=None):
             configurations.append((target, legacy_config.read_text() if migrate else source.read_text()))
     for target, content in configurations:
         if target.exists() and not args.replace_config:
-            message('KEEP', str(target))
+            if target == config / 'config.toml':
+                writer.write(target, with_lazygit_popup(target.read_text()))
+            else:
+                message('KEEP', str(target))
         else:
             writer.write(target, content)
     writer.write(loader, shell_loader(lock, registry, shell))
@@ -305,6 +340,8 @@ def main(argv=None):
     section('Setup complete')
     message('OK', 'Plugins and shell integration are ready.', color='32')
     detail('Next', f'Open a new {shell}, then run herdr.')
+    detail('Git popup', 'Cmd+Shift+G or prefix+d; q closes it.')
+    detail('Folders', 'Visit a project once with cd, then use z <name> or zi.')
     detail('Existing Herdr session', 'Reload its configuration through the menu.')
     if args.no_shell:
         detail('Load helpers manually', 'source ' + shlex.quote(str(loader)))

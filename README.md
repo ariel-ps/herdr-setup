@@ -6,7 +6,7 @@ A ready-to-use [Herdr](https://github.com/herdrdev/herdr) environment for runnin
 
 ## What you get
 
-| Feature | Plugin |
+| Feature | Component |
 | --- | --- |
 | A distinct color palette for each pane | [Colors](https://github.com/ariel-ps/herdr-colors) |
 | Sound and flash alerts when agents finish or need input | [Alerts](https://github.com/ariel-ps/herdr-alerts) |
@@ -14,6 +14,8 @@ A ready-to-use [Herdr](https://github.com/herdrdev/herdr) environment for runnin
 | Agent inspection and session naming | [Sessions](https://github.com/ariel-ps/herdr-sessions) |
 | A Doom face that reflects Claude's context usage | [Doomface](https://github.com/ariel-ps/herdr-doomface) |
 | Git-root investigation scratch notes in `.journal/` | [Repo Journal](https://github.com/ariel-ps/repo-journal) (generic tool, installed via setup) |
+| Git popup with highlighted diffs and colored agent branches | Lazygit + delta |
+| Jump to projects with `z` and pick a folder with `zi` | zoxide + fzf |
 
 Also includes Herdr Plus, Board, Grid, memex, Plugin Manager, and Terminal Code. Sidebar and its menu toggle are disabled by default. Each plugin can be enabled independently in [`dependencies.json`](dependencies.json).
 
@@ -35,7 +37,7 @@ Use an ARM64 or x86-64 machine with a terminal, internet access, `curl`, and `ta
 curl -fsSL https://raw.githubusercontent.com/ariel-ps/herdr-setup/main/install.sh | sh
 ```
 
-Setup preserves existing Herdr settings and backs up files it changes. Bash and Zsh are supported; you do not need to switch shells.
+Setup preserves existing settings, adds the Git popup when its shortcuts are free, and backs up files it changes. Bash and Zsh are supported; you do not need to switch shells.
 
 <details>
 <summary>Install from a clone or use GitHub authentication</summary>
@@ -60,6 +62,10 @@ herdr
 ```
 
 New panes receive their colors automatically. If Herdr is already running, reload its configuration through the menu.
+
+In a repository, press **Cmd+Shift+G** or **prefix+d** to open Lazygit; press **q** to close it. The default prefix is Ctrl+B. You can also run `lazygit` directly.
+
+Visit a project once with `cd`, then use `z project` to return or `zi` to choose from visited folders. Interactive shells also get `ls`, `ll`, and `tree` through eza, and `cat` through bat; existing aliases are preserved.
 
 Test the bundled alert tone without downloading a sound pack:
 

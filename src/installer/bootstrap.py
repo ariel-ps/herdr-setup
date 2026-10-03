@@ -70,10 +70,18 @@ def main():
             result = subprocess.run(['dpkg-query', '-W', '-f=${Status}', package], capture_output=True, text=True)
             if result.returncode or result.stdout != 'install ok installed':
                 missing.append(package)
+        # Minimal images strip /usr/share/doc, including older fzf's runtime bindings.
+        if ('fzf' in packages and 'fzf' not in missing
+                and not Path('/usr/share/doc/fzf/examples/key-bindings.bash').is_file()
+                and (not shutil.which('fzf') or subprocess.run(
+                    ['fzf', '--bash'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode)):
+            missing.append('fzf')
         if missing:
             message('INSTALL', ', '.join(missing))
             run(*root_command, 'apt-get', 'update')
-            run(*root_command, 'env', 'DEBIAN_FRONTEND=noninteractive', 'apt-get', 'install', '-y', '--no-install-recommends', *missing)
+            run(*root_command, 'env', 'DEBIAN_FRONTEND=noninteractive', 'apt-get', 'install', '-y',
+                '--no-install-recommends', '--reinstall',
+                '-o', 'Dpkg::Options::=--path-include=/usr/share/doc/fzf/examples/*', *missing)
     elif shutil.which('dnf'):
         root_command = [] if os.geteuid() == 0 else ['sudo']
         missing = [package for package in manifest['packages']['fedora']
@@ -90,11 +98,14 @@ def main():
         if shutil.which(tool['check']):
             message('OK', f'{name} is available.', color='32')
             continue
+        tool_env = {key: os.path.expandvars(value) for key, value in tool.get('env', {}).items()}
+        message('INSTALL', name)
+        if 'command' in tool:
+            run(*tool['command'], env={**os.environ, **tool_env})
+            continue
         with tempfile.TemporaryDirectory() as temporary:
             script = Path(temporary) / 'install.sh'
             run('curl', '-fLsS', '--retry', '3', tool['url'], '-o', script)
-            message('INSTALL', name)
-            tool_env = {key: os.path.expandvars(value) for key, value in tool.get('env', {}).items()}
             run('sh', script, *tool.get('args', []), env={**os.environ, **tool_env})
     section('[2/4] Prepare Herdr')
     install_herdr(manifest['herdr'], system)

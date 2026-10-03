@@ -7,7 +7,7 @@ Edit [`dependencies.json`](../dependencies.json), then run `./install.sh`.
 | `packages.macos` | Homebrew formulae |
 | `packages.linux` | Ubuntu/Debian packages |
 | `packages.fedora` | Fedora packages or file providers, installed through dnf |
-| `tools` | Official installation scripts for tools missing from PATH |
+| `tools` | Installation scripts or argument-array commands for tools missing from PATH |
 | `herdr.version` | Herdr release to install when it is missing |
 | `herdr.downloads` | SHA256 verification by OS and architecture |
 | `plugins` | All selected plugins, each installed from its own repository |
@@ -30,6 +30,10 @@ A plugin entry:
 To add a system prerequisite, append its name to the appropriate `packages` list. Package managers use available repository versions; plugin build scripts may download additional upstream assets.
 
 Fedora entries such as `/usr/bin/curl` and `/usr/bin/ffplay` let dnf choose the package providing that executable, while keeping a compatible installed provider.
+
+Navigation uses zoxide, fzf, eza, bat, and fd. Ubuntu/Debian name the last two executables `batcat` and `fdfind`; the shell loader handles these names. Lazygit uses delta for diffs. Homebrew supplies Lazygit on macOS; on Linux, the pinned `tools.lazygit.command` builds it with Go into `~/.local/bin`, without adding a package repository. Change that version in this manifest to select a different release for new installations. Existing executables are kept.
+
+The package lists are tested with Ubuntu 24.04 and Fedora 44; use Debian 13 or newer for the listed navigation packages. The pinned Lazygit build needs Go 1.25; Go 1.21+ automatically downloads the required toolchain when needed.
 
 Every plugin is fetched from its repository at the selected revision. This repository contains the installer and defaults, not plugin source. Colors, Alerts, Layouts, Sessions, Doomface, Repo Journal, and Sidebar Menu can each be enabled independently. Repo Journal needs **Node 20+** on PATH at runtime (bundled CLI in the plugin checkout).
 

@@ -1,0 +1,8 @@
+# Open Git tools in the focused pane's repository. Press q to close.
+[[keys.command]]
+key = ["cmd+shift+g", "prefix+d"]
+type = "popup"
+command = 'cd "${HERDR_ACTIVE_PANE_CWD:-.}" && exec lazygit'
+description = "Git status"
+width = "90%"
+height = "85%"

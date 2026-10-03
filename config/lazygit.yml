@@ -1,0 +1,59 @@
+# Inspired by https://learn.datalumina.com/docs/herdr/lazygit
+gui:
+  showCommandLog: false
+  showBottomLine: false
+  showRandomTip: false
+  showPanelJumps: false
+  showListFooter: false
+  showNumstatInFilesView: true
+  showFileTree: true
+  sidePanelWidth: 0.3
+  shrinkSidePanelsToContent: true
+  expandFocusedSidePanel: true
+  expandedSidePanelWeight: 8
+  splitDiff: auto
+  nerdFontsVersion: "3"
+  tabWidth: 4
+  portraitMode: auto
+  portraitModeAutoMaxWidth: 110
+  portraitModeAutoMinHeight: 30
+  sidePanels: [[status], [files], [stash, branches, commits]]
+  branchColorPatterns:
+    "^me/": "#5fd7ff"
+    "^codex/": "#c678dd"
+    "^claude/": "#e5c07b"
+    "^grok/": "#00e5a8"
+    "^cursor/": "#61afef"
+    "^feat/": "#98c379"
+    "^fix/": "#e06c75"
+    "^main$": "#98c379"
+git:
+  log:
+    showGraph: never
+  diffContextSize: 3
+  diffRenderers:
+    - name: delta
+      command: >-
+        delta --dark --paging=never --true-color=always --syntax-theme=TwoDark
+        --tabs=4 --relative-paths --line-numbers
+        --minus-style="syntax #49282e" --minus-emph-style="syntax #753235"
+        --plus-style="syntax #243d2f" --plus-emph-style="syntax #2b5c37"
+    - name: color-words
+      type: rawGit
+      args: [--color-words]
+customCommands:
+  - key: b
+    context: "files, status, stash"
+    description: "Checkout branch"
+    loadingText: "Checking out"
+    prompts:
+      - type: input
+        title: "Checkout:"
+        key: Branch
+        suggestions:
+          preset: branches
+    command: git checkout {{.Form.Branch | quote}}
+quitOnTopLevelReturn: true
+disableStartupPopups: true
+update:
+  method: never

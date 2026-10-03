@@ -43,6 +43,7 @@ For curl installation, pass options using `| sh -s -- --dry-run`. Set `HERDR_SET
 | Bash integration | `~/.bashrc` and the active login file | `HOME` |
 | Zsh integration | `~/.zshrc` | `ZDOTDIR` |
 | Herdr binary, if missing | `~/.local/bin/herdr` | Existing compatible binary on `PATH` |
+| Lazygit settings | Directory reported by `lazygit --print-config-dir` | `XDG_CONFIG_HOME`; existing `LG_CONFIG_FILE` is respected |
 
 For custom locations, export the variables before installation and keep them set when running Herdr:
 
@@ -52,7 +53,18 @@ export XDG_CONFIG_HOME="$HOME/preferences"
 ./install.sh
 ```
 
-Existing configuration is preserved unless you use `--replace-config`. Backups include a manifest of original file paths.
+Existing configuration is preserved unless you use `--replace-config`. Setup adds the Lazygit popup to an existing Herdr configuration only when neither shortcut is occupied. Backups include a manifest of original file paths. `--replace-config` replaces Herdr, plugin, and Lazygit defaults; a custom `LG_CONFIG_FILE` remains untouched.
+
+## Git and folder navigation
+
+The defaults follow Datalumina's [Lazygit](https://learn.datalumina.com/docs/herdr/lazygit) and [folder navigation](https://learn.datalumina.com/docs/herdr/folders) guides, adapted for Bash and Zsh on macOS and Linux.
+
+- **Cmd+Shift+G** or **prefix+d** opens Lazygit in the focused pane's directory. Press **q** to close it. Linux users can use prefix+d; the default prefix is Ctrl+B.
+- Lazygit uses a compact file view, agent branch colors, and delta's TwoDark syntax highlighting. Press `|` to switch to word-level diffs. Its config is installed only when missing.
+- After visiting a directory with `cd`, use `z name` to return or `zi` to search visited directories with fzf.
+- Interactive shells initialize zoxide and fzf, including older distro fzf versions. eza supplies `ls`, `ll`, and `tree`; bat supplies `cat`. Existing aliases, functions, `BAT_THEME`, and fzf settings take precedence.
+
+The shell loader contains these helpers, so removing the downloaded installer does not break them. `--no-shell` still generates the loader but leaves startup files unchanged. Open a new shell to load updated helpers. Icons require a Nerd Font in your terminal; terminal and font installation remain your choice.
 
 ## Defaults and optional features
 

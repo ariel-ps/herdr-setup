@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import shutil
 import tempfile
 import tomllib
 import unittest
@@ -18,6 +19,72 @@ spec.loader.exec_module(installer)
 
 
 class InstallTests(unittest.TestCase):
+    def test_popup_preserves_config_and_custom_shortcuts(self):
+        original = '# user settings\nonboarding = true\n[keys]\nprefix = "ctrl+a"\n'
+        updated = installer.with_lazygit_popup(original)
+        self.assertTrue(updated.startswith(original))
+        self.assertEqual(installer.with_lazygit_popup(updated), updated)
+        self.assertTrue(tomllib.loads(updated)['onboarding'])
+        self.assertEqual(tomllib.loads(updated)['keys']['command'][0]['key'], ['cmd+shift+g', 'prefix+d'])
+        for custom in [original + 'zoom = "prefix+d"\n', original + 'command = []\n',
+                       original + '[[keys.command]]\nkey = "prefix+d"\ncommand = "my-tool"\n']:
+            self.assertEqual(installer.with_lazygit_popup(custom), custom)
+
+    def test_lazygit_config_is_preserved_and_backed_up_on_replace(self):
+        with tempfile.TemporaryDirectory(prefix='git user ') as temp:
+            root = Path(temp)
+            shutil.copytree(ROOT / 'config', root / 'config')
+            (root / 'dependencies.json').write_text(json.dumps({
+                'schema_version': 2, 'plugins': [], 'packages': {}, 'herdr': {'version': '0.9.3'}}))
+            git_config = root / 'git preferences/config.yml'
+            git_config.parent.mkdir()
+            git_config.write_text('gui:\n  sidePanelWidth: 0.4\n')
+            env = {'HOME': temp, 'SHELL': '/bin/bash', 'HERDR_CONFIG_PATH': '', 'LG_CONFIG_FILE': '',
+                   'XDG_CONFIG_HOME': str(root / 'preferences'), 'XDG_DATA_HOME': str(root / 'data')}
+            with patch.dict(os.environ, env), patch.object(installer, 'ROOT', root), \
+                 patch.object(installer.shutil, 'which', return_value='/bin/bash'), \
+                 patch.object(installer, 'run', side_effect=lambda *a, **kw:
+                              str(git_config.parent) if a[0] == 'lazygit' else 'herdr 0.9.3'):
+                installer.main(['--no-shell'])
+                self.assertEqual(git_config.read_text(), 'gui:\n  sidePanelWidth: 0.4\n')
+                installer.main(['--no-shell', '--replace-config'])
+                self.assertEqual(git_config.read_text(), (root / 'config/lazygit.yml').read_text())
+                backups = list((root / 'data/herdr-setup/backups').glob('*/*-config.yml'))
+                self.assertEqual(len(backups), 1)
+                self.assertEqual(backups[0].read_text(), 'gui:\n  sidePanelWidth: 0.4\n')
+
+    def test_folder_helpers_work_in_bash_and_zsh_without_overriding_aliases(self):
+        with tempfile.TemporaryDirectory(prefix='folder user ') as temp:
+            root = Path(temp)
+            tools = root / 'tools'
+            tools.mkdir()
+            for name in ('eza', 'batcat', 'fdfind'):
+                tool = tools / name
+                tool.write_text('#!/bin/sh\nexit 0\n')
+                tool.chmod(0o755)
+            tool = tools / 'zoxide'
+            tool.write_text(r'''#!/bin/sh
+printf '%s\n' 'z() { builtin cd "$@"; }' 'zi() { :; }'
+''')
+            tool.chmod(0o755)
+            for shell in ('bash', 'zsh'):
+                executable = shutil.which(shell)
+                result = subprocess.run([executable, '-fic', '''
+alias ll='echo preserved'
+export BAT_THEME=custom
+source "$1"
+source "$1"
+[[ $BAT_THEME == custom && $FZF_DEFAULT_COMMAND == fdfind* ]] || exit 2
+[[ $(alias ll) == *preserved* && $(alias cat) == *batcat* ]] || exit 3
+z "$2" || exit 4
+[[ $PWD == "$2" ]] || exit 5
+command -v zi
+''', 'check', str(ROOT / 'config/shell-tools.sh'), str(root)],
+                    env={**os.environ, 'HOME': temp, 'ZDOTDIR': temp, 'PATH': str(tools),
+                         'FZF_DEFAULT_COMMAND': '', '_HERDR_FOLDER_TOOLS_LOADED': ''},
+                    capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, (shell, result.stderr))
+
     def test_manifest_has_only_public_plugin_dependencies(self):
         manifest = json.loads((ROOT / 'dependencies.json').read_text())
         installer.validate_manifest(manifest)
@@ -124,8 +191,7 @@ class InstallTests(unittest.TestCase):
     def test_no_shell_installs_loader_without_editing_shell_settings(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            (root / 'config').mkdir()
-            (root / 'config/herdr.toml').write_text((ROOT / 'config/herdr.toml').read_text())
+            shutil.copytree(ROOT / 'config', root / 'config')
             (root / 'dependencies.json').write_text(json.dumps({
                 'schema_version': 2, 'plugins': [], 'packages': {}, 'herdr': {'version': '0.9.3'}}))
             (root / '.zshrc').write_text('alias keep=true\n')
@@ -133,7 +199,7 @@ class InstallTests(unittest.TestCase):
                    'ZDOTDIR': temp, 'HERDR_CONFIG_PATH': '', 'SHELL': '/bin/zsh'}
             with patch.dict(os.environ, env), patch.object(installer, 'ROOT', root), \
                  patch.object(installer.shutil, 'which', return_value='/usr/bin/zsh'), \
-                 patch.object(installer, 'run', return_value='herdr 0.9.3'):
+                 patch.object(installer, 'run', side_effect=lambda *a, **kw: str(root / 'lazygit') if a[0] == 'lazygit' else 'herdr 0.9.3'):
                 self.assertEqual(installer.main(['--no-shell']), 0)
             self.assertEqual((root / '.zshrc').read_text(), 'alias keep=true\n')
             self.assertTrue((root / 'data/herdr-setup/shell.zsh').is_file())
@@ -141,8 +207,7 @@ class InstallTests(unittest.TestCase):
     def test_bash_install_login_files_repeat_install_and_existing_config(self):
         with tempfile.TemporaryDirectory(prefix='bash user ') as temp:
             root = Path(temp)
-            (root / 'config').mkdir()
-            (root / 'config/herdr.toml').write_text((ROOT / 'config/herdr.toml').read_text())
+            shutil.copytree(ROOT / 'config', root / 'config')
             (root / 'dependencies.json').write_text(json.dumps({
                 'schema_version': 2, 'plugins': [], 'packages': {}, 'herdr': {'version': '0.9.3'}}))
             (root / '.bashrc').write_text('export KEEP_SETTING=yes\n')
@@ -150,13 +215,14 @@ class InstallTests(unittest.TestCase):
             env = {'HOME': temp, 'SHELL': '/bin/bash', 'HERDR_CONFIG_PATH': '',
                    'XDG_CONFIG_HOME': str(root / 'preferences'), 'XDG_DATA_HOME': str(root / 'data')}
             with patch.dict(os.environ, env), patch.object(installer, 'ROOT', root), \
-                 patch.object(installer, 'run', return_value='herdr 0.9.3'):
+                 patch.object(installer, 'run', side_effect=lambda *a, **kw: str(root / 'lazygit') if a[0] == 'lazygit' else 'herdr 0.9.3'):
                 self.assertEqual(installer.main([]), 0)
                 config = root / 'preferences/herdr/config.toml'
                 self.assertEqual(tomllib.loads(config.read_text())['terminal']['default_shell'], '/bin/bash')
                 config.write_text('onboarding = true\n')
                 self.assertEqual(installer.main([]), 0)
-                self.assertEqual(config.read_text(), 'onboarding = true\n')
+                self.assertTrue(tomllib.loads(config.read_text())['onboarding'])
+                self.assertEqual(len(tomllib.loads(config.read_text())['keys']['command']), 1)
             self.assertFalse((root / '.bash_profile').exists())
             self.assertFalse((root / '.zshrc').exists())
             for name in ['.bashrc', '.profile']:

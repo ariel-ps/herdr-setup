@@ -133,7 +133,14 @@
       "uv",
       "git",
       "go",
-      "ffmpeg"
+      "ffmpeg",
+      "lazygit",
+      "git-delta",
+      "bat",
+      "zoxide",
+      "fzf",
+      "eza",
+      "fd"
     ],
     "linux": [
       "ca-certificates",
@@ -155,7 +162,13 @@
       "procps",
       "util-linux",
       "bsdextrautils",
-      "file"
+      "file",
+      "git-delta",
+      "bat",
+      "zoxide",
+      "fzf",
+      "eza",
+      "fd-find"
     ],
     "fedora": [
       "ca-certificates",
@@ -181,7 +194,13 @@
       "nmap-ncat",
       "procps-ng",
       "util-linux",
-      "file"
+      "file",
+      "git-delta",
+      "bat",
+      "zoxide",
+      "fzf",
+      "eza",
+      "fd-find"
     ]
   },
   "tools": {
@@ -203,6 +222,17 @@
         "minimal",
         "--no-modify-path"
       ]
+    },
+    "lazygit": {
+      "check": "lazygit",
+      "command": [
+        "go",
+        "install",
+        "github.com/jesseduffield/lazygit@v0.65.1"
+      ],
+      "env": {
+        "GOBIN": "$HOME/.local/bin"
+      }
     }
   },
   "herdr": {
