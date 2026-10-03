@@ -87,7 +87,8 @@ herdr-alert play
 | --- | --- |
 | `herdr-alert status` | Show alert settings and playback dependencies |
 | `herdr-alert list` | List sound choices |
-| `herdr-alert download mario` | Download the optional Mario pack |
+| `herdr-alert download mario` | Download Mario sounds and sprite artwork |
+| `herdr-alert download --sprites` | Download available game artwork without audio |
 | `herdr-alert set done 1up` | Use the downloaded `1up` sound for completed agents |
 | `herdr-alert disable` | Mute automatic sound alerts |
 | `herdr-alert enable` | Enable automatic sound alerts |
