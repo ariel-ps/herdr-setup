@@ -113,7 +113,7 @@
       "name": "Repo Journal",
       "repository": "ariel-ps/repo-journal",
       "subdir": "",
-      "ref": "6517da8ff205b5467e501fcfb03b40621415ec27",
+      "ref": "fd30b90f705164a234aecddfd2e9c2069081f28e",
       "enabled": true,
       "shell": "shell.zsh",
       "shell_bash": "shell.bash"
@@ -229,6 +229,17 @@
         "go",
         "install",
         "github.com/jesseduffield/lazygit@v0.65.1"
+      ],
+      "env": {
+        "GOBIN": "$HOME/.local/bin"
+      }
+    },
+    "treehouse": {
+      "check": "treehouse",
+      "command": [
+        "go",
+        "install",
+        "github.com/kunchenguid/treehouse/v3@v3.1.0"
       ],
       "env": {
         "GOBIN": "$HOME/.local/bin"
