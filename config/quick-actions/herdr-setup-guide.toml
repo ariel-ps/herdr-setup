@@ -13,11 +13,11 @@ description = "Cmd+Shift+G or prefix+d; q closes Lazygit."
 
 [[options]]
 label = "Code tab"
-description = "New workspaces open a code tab (nvim .); rename any idle tab to code too."
+description = "New workspaces add a code tab (nvim .); rename any idle tab to code too."
 
 [[options]]
 label = "Board tab"
-description = "New workspaces open a board tab; rename any idle tab to board too."
+description = "New workspaces add a board tab; rename any idle tab to board too."
 
 [[options]]
 label = "Folders"
