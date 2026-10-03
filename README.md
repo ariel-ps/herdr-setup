@@ -14,7 +14,7 @@ A ready-to-use [Herdr](https://github.com/herdrdev/herdr) environment for runnin
 | Saved pane layouts, agent grids, and automatic `code` and `board` tabs | [Layouts](https://github.com/ariel-ps/herdr-layouts) |
 | Agent launch shortcuts, inspection, and session naming | [Sessions](https://github.com/ariel-ps/herdr-sessions) |
 | A Doom face that reflects Claude's context usage | [Doomface](https://github.com/ariel-ps/herdr-doomface) |
-| Git-root investigation scratch notes in `.journal/` | [Repo Journal](https://github.com/ariel-ps/repo-journal) (generic tool, installed via setup) |
+| Git-root investigation scratch notes in `.journal/` | [Journal Repo](https://github.com/ariel-ps/repo-journal) (`journal-repo` CLI, installed via setup) |
 | Git popup with highlighted diffs and colored agent branches | Lazygit + delta |
 | Jump to projects with `z` and pick a folder with `zi` | zoxide + fzf |
 
