@@ -113,7 +113,7 @@
       "name": "Journal Repo",
       "repository": "ariel-ps/repo-journal",
       "subdir": "",
-      "ref": "752ead98bf760c0425ca6bfa80989751f550bcf6",
+      "ref": "2efd25ab119390fd78fad44f90fa48ce642df5e7",
       "enabled": true,
       "shell": "shell.zsh",
       "shell_bash": "shell.bash"
