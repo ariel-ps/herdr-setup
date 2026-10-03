@@ -180,7 +180,7 @@ command -v zi
             registry.write_text(json.dumps([{'plugin_id': 'dev.ariel.herdr-kit', 'enabled': True, 'plugin_root': temp}]))
             with patch.object(installer, 'run') as run:
                 installer.install_plugins({'plugins': []}, registry)
-                self.assertEqual(run.call_args_list[-1].args, ('herdr', 'plugin', 'disable', 'dev.ariel.herdr-kit'))
+                run.assert_called_once_with('herdr', 'plugin', 'disable', 'dev.ariel.herdr-kit')
 
     def test_plugin_paths_cannot_escape_the_checkout(self):
         for field in ['shell', 'shell_bash', 'config', 'subdir']:

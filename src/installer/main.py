@@ -245,10 +245,9 @@ def install_plugins(lock, registry_path):
     # Replace the old combined plugin only after all selected plugins install.
     legacy = by_id.get('dev.ariel.herdr-kit', {})
     if legacy.get('enabled'):
-        stop = Path(legacy['plugin_root']) / 'doomface-hook.sh'
-        if stop.is_file():
-            run('zsh', stop, '--stop-all')
+        # Older stop hooks signal unverified cached PIDs. Never execute them.
         run('herdr', 'plugin', 'disable', 'dev.ariel.herdr-kit')
+        message('NOTE', 'Legacy Kit disabled. Older face workers may remain until their panes close.')
 
 
 def main(argv=None):
