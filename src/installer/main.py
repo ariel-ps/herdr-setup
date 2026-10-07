@@ -378,6 +378,13 @@ def main(argv=None):
         if not lazygit_directory.is_absolute():
             raise ValueError('Lazygit returned an invalid configuration directory')
         configurations.append((lazygit_directory / 'config.yml', (ROOT / 'config/lazygit.yml').read_text()))
+    nvim_source = ROOT / 'config/nvim'
+    nvim_config = config_home / 'nvim'
+    if nvim_config.is_dir() and any(nvim_config.iterdir()) and not args.replace_config:
+        message('KEEP', str(nvim_config))
+    else:
+        configurations.extend((nvim_config / source.relative_to(nvim_source), source.read_text())
+                              for source in sorted(nvim_source.rglob('*')) if source.is_file())
     installed = {p['plugin_id']: p for p in json.loads(registry.read_text())} if registry.exists() else {}
     legacy_config = config / 'plugins/config/dev.ariel.herdr-kit/config.sh'
     for item in lock['plugins']:
@@ -404,6 +411,7 @@ def main(argv=None):
     if any(p['id'] == 'cloudmanic.herdr-plus' and p.get('enabled', True) for p in lock['plugins']):
         detail('Control panel', 'Press prefix+down, or run herdr plugin action invoke cloudmanic.herdr-plus.quick-actions.')
     detail('Git popup', 'Cmd+Shift+G or prefix+d; q closes it.')
+    detail('Neovim', f'LazyVim config at {nvim_config}; first launch installs plugins (needs network).')
     detail('Folders', 'Use your shell goto helpers or cd; fzf key bindings search history and paths.')
     detail('Existing Herdr session', 'Reload its configuration through the menu.')
     if args.no_shell:

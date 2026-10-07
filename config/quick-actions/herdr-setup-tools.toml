@@ -25,7 +25,7 @@ description = "Lazygit in the project you opened the panel from."
 [[options]]
 label = "Code"
 value = "code"
-description = "Neovim in this project; requires nvim on PATH."
+description = "Neovim (LazyVim) in this project; requires nvim on PATH."
 
 [[options]]
 label = "Board"

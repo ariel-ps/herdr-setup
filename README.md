@@ -17,6 +17,7 @@ A ready-to-use [Herdr](https://github.com/herdrdev/herdr) environment for runnin
 | Git-root investigation scratch notes in `.journal/` | [Journal Repo](https://github.com/ariel-ps/repo-journal) (`journal-repo` CLI, installed via setup) |
 | Git popup with highlighted diffs and colored agent branches | Lazygit + delta |
 | fzf in the shell (history, paths) | fzf |
+| IDE-like Neovim for the Tools → Code quick action | [LazyVim](https://www.lazyvim.org/) |
 
 Also includes Herdr Plus, Board, Grid, memex, Plugin Manager, and Terminal Code. Sidebar and its menu toggle are disabled by default. Each plugin can be enabled independently in [`dependencies.json`](dependencies.json).
 

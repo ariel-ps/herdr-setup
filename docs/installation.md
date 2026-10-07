@@ -55,6 +55,7 @@ For curl installation, pass options using `| sh -s -- --dry-run`. Set `HERDR_SET
 | Zsh integration | `~/.zshrc` | `ZDOTDIR` |
 | Herdr binary, if missing | `~/.local/bin/herdr` | Existing compatible binary on `PATH` |
 | Lazygit settings | Directory reported by `lazygit --print-config-dir` | `XDG_CONFIG_HOME`; existing `LG_CONFIG_FILE` is respected |
+| Neovim settings ([LazyVim](https://www.lazyvim.org/) starter) | `~/.config/nvim` | `XDG_CONFIG_HOME`; kept untouched if that directory already has files |
 
 For custom locations, export the variables before installation and keep them set when running Herdr:
 
@@ -82,7 +83,9 @@ Herdr Plus supplies a mouse-driven overlay with search, descriptions, and keyboa
 
 Setup adds five menus: Tools (Git, Neovim, Board, and Grid), Sound and visual alerts, Plugin actions, Installed plugins, and Quick guide. Plugin actions reads the live plugin registry each time and includes only enabled actions for your operating system. Installed plugins opens the existing Plugin Manager for plugin state and management.
 
-The defaults live in `quick-actions/herdr-setup-*.toml` under the directory reported by `herdr plugin config-dir cloudmanic.herdr-plus`. Edit them there; rerunning Setup preserves edits unless `--replace-config` is selected. Other Quick Actions files remain untouched. Disabling Herdr Plus in `dependencies.json` skips these defaults. Bootstrap installs **Neovim** (`neovim` / Homebrew `neovim`) for the Tools → Code quick action; sound settings control the split Herdr Alerts plugin.
+The defaults live in `quick-actions/herdr-setup-*.toml` under the directory reported by `herdr plugin config-dir cloudmanic.herdr-plus`. Edit them there; rerunning Setup preserves edits unless `--replace-config` is selected. Other Quick Actions files remain untouched. Disabling Herdr Plus in `dependencies.json` skips these defaults. Bootstrap installs **Neovim** (`neovim` / Homebrew `neovim`) for the Tools → Code quick action, configured with the [LazyVim](https://www.lazyvim.org/) starter; sound settings control the split Herdr Alerts plugin.
+
+Neovim is set up with [`config/nvim`](../config/nvim), a vendored copy of the official [LazyVim starter](https://github.com/LazyVim/starter). It is written to `~/.config/nvim` only when that directory is empty or missing, so an existing personal Neovim config is never touched; use `--replace-config` to overwrite it anyway (your previous files are backed up). The first `nvim` launch clones `lazy.nvim` and installs LazyVim's plugins, which needs network access and `git`. `ripgrep` and `fd` (already installed packages) power Telescope's live grep and file finder.
 
 ## Defaults and optional features
 

@@ -53,6 +53,48 @@ class InstallTests(unittest.TestCase):
                 self.assertEqual(len(backups), 1)
                 self.assertEqual(backups[0].read_text(), 'gui:\n  sidePanelWidth: 0.4\n')
 
+    def test_nvim_config_is_preserved_and_backed_up_on_replace(self):
+        with tempfile.TemporaryDirectory(prefix='nvim user ') as temp:
+            root = Path(temp)
+            shutil.copytree(ROOT / 'config', root / 'config')
+            (root / 'dependencies.json').write_text(json.dumps({
+                'schema_version': 2, 'plugins': [], 'packages': {}, 'herdr': {'version': '0.9.3'}}))
+            nvim_config = root / 'preferences/nvim'
+            nvim_config.mkdir(parents=True)
+            (nvim_config / 'init.lua').write_text('-- my own config\n')
+            env = {'HOME': temp, 'SHELL': '/bin/bash', 'HERDR_CONFIG_PATH': '', 'LG_CONFIG_FILE': '',
+                   'XDG_CONFIG_HOME': str(root / 'preferences'), 'XDG_DATA_HOME': str(root / 'data')}
+            with patch.dict(os.environ, env), patch.object(installer, 'ROOT', root), \
+                 patch.object(installer.shutil, 'which', return_value='/bin/bash'), \
+                 patch.object(installer, 'run', side_effect=lambda *a, **kw:
+                              str(root / 'lazygit') if a[0] == 'lazygit' else 'herdr 0.9.3'):
+                installer.main(['--no-shell'])
+                self.assertEqual((nvim_config / 'init.lua').read_text(), '-- my own config\n')
+                self.assertFalse((nvim_config / 'lua/config/lazy.lua').exists())
+                installer.main(['--no-shell', '--replace-config'])
+                self.assertEqual((nvim_config / 'init.lua').read_text(), (root / 'config/nvim/init.lua').read_text())
+                self.assertTrue((nvim_config / 'lua/config/lazy.lua').is_file())
+                backups = list((root / 'data/herdr-setup/backups').glob('*/*-init.lua'))
+                self.assertEqual(len(backups), 1)
+                self.assertEqual(backups[0].read_text(), '-- my own config\n')
+
+    def test_nvim_config_installed_when_missing(self):
+        with tempfile.TemporaryDirectory(prefix='fresh user ') as temp:
+            root = Path(temp)
+            shutil.copytree(ROOT / 'config', root / 'config')
+            (root / 'dependencies.json').write_text(json.dumps({
+                'schema_version': 2, 'plugins': [], 'packages': {}, 'herdr': {'version': '0.9.3'}}))
+            env = {'HOME': temp, 'SHELL': '/bin/bash', 'HERDR_CONFIG_PATH': '', 'LG_CONFIG_FILE': '',
+                   'XDG_CONFIG_HOME': str(root / 'preferences'), 'XDG_DATA_HOME': str(root / 'data')}
+            with patch.dict(os.environ, env), patch.object(installer, 'ROOT', root), \
+                 patch.object(installer.shutil, 'which', return_value='/bin/bash'), \
+                 patch.object(installer, 'run', side_effect=lambda *a, **kw:
+                              str(root / 'lazygit') if a[0] == 'lazygit' else 'herdr 0.9.3'):
+                installer.main(['--no-shell'])
+            nvim_config = root / 'preferences/nvim'
+            for relative in ['init.lua', 'lua/config/lazy.lua', 'lua/plugins/example.lua']:
+                self.assertEqual((nvim_config / relative).read_text(), (root / 'config/nvim' / relative).read_text())
+
     def test_folder_helpers_work_in_bash_and_zsh_without_overriding_aliases(self):
         with tempfile.TemporaryDirectory(prefix='folder user ') as temp:
             root = Path(temp)
