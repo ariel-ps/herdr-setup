@@ -22,7 +22,7 @@ type = "select"
 [[options]]
 label = "Current settings"
 value = "status"
-description = "Show sound, flash, sprite and playback settings."
+description = "Show sound, flash, sprite, animation and playback settings."
 
 [[options]]
 label = "Preview alert"

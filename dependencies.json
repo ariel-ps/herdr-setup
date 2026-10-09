@@ -62,7 +62,7 @@
       "name": "Herdr Colors",
       "repository": "ariel-ps/herdr-colors",
       "subdir": "",
-      "ref": "8f6bf3d612303d37963f77ed07300d2f7ef25c28",
+      "ref": "ec4a385563c02e67dad95654a6ee9120a41cf21e",
       "enabled": true,
       "shell": "shell.zsh",
       "shell_bash": "shell.bash"
@@ -72,7 +72,7 @@
       "name": "Herdr Alerts",
       "repository": "ariel-ps/herdr-alerts",
       "subdir": "",
-      "ref": "508d713fcfe76a881ee7116fa6619380560ce4d1",
+      "ref": "816c84ec4fdab8811b8445793e92f5eeef113232",
       "enabled": true,
       "shell": "shell.zsh",
       "shell_bash": "shell.bash",
@@ -83,7 +83,7 @@
       "name": "Herdr Layouts",
       "repository": "ariel-ps/herdr-layouts",
       "subdir": "",
-      "ref": "321b5d830f2c91d2222959fb79dc3ff92b8ae5df",
+      "ref": "527e9714159cf8c9d950a15fa07f79463a07b288",
       "enabled": true,
       "shell": "shell.zsh",
       "shell_bash": "shell.bash"
@@ -93,7 +93,7 @@
       "name": "Herdr Sessions",
       "repository": "ariel-ps/herdr-sessions",
       "subdir": "",
-      "ref": "945370d17c8f5d40b9d407abea7b5d2d16de329e",
+      "ref": "2a22cf1c7037a6c0a3bb31d2afcce368e5f0715d",
       "enabled": true,
       "shell": "shell.zsh",
       "shell_bash": "shell.bash",
@@ -104,7 +104,7 @@
       "name": "Herdr Doomface",
       "repository": "ariel-ps/herdr-doomface",
       "subdir": "",
-      "ref": "1fcd4e4d6d06defcdb02d9bc171bb6d3492a98e0",
+      "ref": "7d7689862999b005a2fa7960f8c3ab5c5b2d374a",
       "enabled": true,
       "config": "config.sh"
     },
@@ -123,7 +123,7 @@
       "name": "Herdr Sidebar Menu",
       "repository": "ariel-ps/herdr-sidebar-menu",
       "subdir": "",
-      "ref": "2478c95df4d4c349493b17eab27a02834e94cf8a",
+      "ref": "4e5077739b375e44218ccb5c8e97da899de035b2",
       "enabled": false
     }
   ],

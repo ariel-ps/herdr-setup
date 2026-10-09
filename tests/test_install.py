@@ -124,6 +124,12 @@ source "$1"
         installer.validate_manifest(manifest)
         self.assertNotIn('sources', manifest)
 
+    def test_bundled_plugin_refs_are_full_commit_shas(self):
+        manifest = json.loads((ROOT / 'dependencies.json').read_text())
+        for plugin in manifest['plugins']:
+            with self.subTest(plugin=plugin['id']):
+                self.assertRegex(plugin['ref'], r'\A[0-9a-f]{40}\Z')
+
     def test_shell_install_preserves_settings_and_is_repeatable(self):
         original = 'export EDITOR=vim\nalias ll="ls -l"\n'
         loader = Path('/home/a user/.local/share/herdr-setup/kit/setup.zsh')
@@ -249,6 +255,7 @@ source "$1"
             env = {'HOME': temp, 'SHELL': '/bin/bash', 'HERDR_CONFIG_PATH': '',
                    'XDG_CONFIG_HOME': str(root / 'preferences'), 'XDG_DATA_HOME': str(root / 'data')}
             with patch.dict(os.environ, env), patch.object(installer, 'ROOT', root), \
+                 patch.object(installer.shutil, 'which', return_value='/bin/bash'), \
                  patch.object(installer, 'run', side_effect=lambda *a, **kw: str(root / 'lazygit') if a[0] == 'lazygit' else 'herdr 0.9.3'):
                 self.assertEqual(installer.main([]), 0)
                 config = root / 'preferences/herdr/config.toml'
