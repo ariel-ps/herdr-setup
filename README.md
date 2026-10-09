@@ -1,8 +1,17 @@
 # Herdr Setup
 
+![GitHub stars](https://img.shields.io/github/stars/ariel-ps/herdr-setup)
+![GitHub forks](https://img.shields.io/github/forks/ariel-ps/herdr-setup)
+![GitHub last commit](https://img.shields.io/github/last-commit/ariel-ps/herdr-setup)
+![GitHub license](https://img.shields.io/github/license/ariel-ps/herdr-setup)
+
 A ready-to-use [Herdr](https://github.com/herdrdev/herdr) environment for running coding agents side by side. Distinguish panes by color, hear when an agent needs attention, and restore saved layouts.
 
 **macOS · Ubuntu/Debian · Fedora · Bash and Zsh**
+
+Use this to set up a terminal workspace for AI coding agents, Herdr plugins, tmux-style panes, alerts, layouts, and shell tools in one install.
+
+[Install](#install) · [First use](#first-use) · [Customize](#customize) · [Docs](docs/installation.md)
 
 ## What you get
 
