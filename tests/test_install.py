@@ -124,6 +124,12 @@ source "$1"
         installer.validate_manifest(manifest)
         self.assertNotIn('sources', manifest)
 
+    def test_bundled_plugin_refs_are_full_commit_shas(self):
+        manifest = json.loads((ROOT / 'dependencies.json').read_text())
+        for plugin in manifest['plugins']:
+            with self.subTest(plugin=plugin['id']):
+                self.assertRegex(plugin['ref'], r'\A[0-9a-f]{40}\Z')
+
     def test_shell_install_preserves_settings_and_is_repeatable(self):
         original = 'export EDITOR=vim\nalias ll="ls -l"\n'
         loader = Path('/home/a user/.local/share/herdr-setup/kit/setup.zsh')
