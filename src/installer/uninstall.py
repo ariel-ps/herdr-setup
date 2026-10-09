@@ -85,7 +85,7 @@ def installed_plugin_ids() -> set[str]:
         text=True,
     ).stdout
     payload = json.loads(output)
-    return {plugin['id'] for plugin in payload['result']['plugins']}
+    return {plugin['plugin_id'] for plugin in payload['result']['plugins']}
 
 
 def uninstall_plugins(ids: list[str]) -> int:

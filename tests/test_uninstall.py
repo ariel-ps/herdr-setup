@@ -49,7 +49,7 @@ class UninstallPluginTests(unittest.TestCase):
     @patch.object(uninstall.subprocess, 'run')
     @patch.object(uninstall.shutil, 'which', return_value='/usr/bin/herdr')
     def test_uninstall_skips_missing_plugins(self, _which, run):
-        listing = json.dumps({'result': {'plugins': [{'id': 'a.example'}]}})
+        listing = json.dumps({'result': {'plugins': [{'plugin_id': 'a.example'}]}})
         run.side_effect = [
             mock.Mock(stdout=listing),
             mock.Mock(returncode=0),
