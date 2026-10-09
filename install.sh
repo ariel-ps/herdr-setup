@@ -59,12 +59,55 @@ herdr_setup_main() {
         fi
         mkdir "$setup_tmp/source"
         tar -xzf "$setup_tmp/setup.tar.gz" -C "$setup_tmp/source" --strip-components=1
-        for setup_required in install.sh dependencies.json src/installer/main.py src/installer/bootstrap.py; do
+        for setup_required in install.sh uninstall.sh dependencies.json src/installer/main.py src/installer/bootstrap.py src/installer/output.py src/installer/uninstall.py; do
             [ -f "$setup_tmp/source/$setup_required" ] || { echo "Incomplete archive: $setup_required" >&2; return 1; }
         done
-        # The installer copies runtime files into the user's data directory.
+        setup_persist=1
+        for setup_arg in "$@"; do
+            case "$setup_arg" in --dry-run|--help|-h) setup_persist=0 ;; esac
+        done
+        if [ "$setup_persist" = 1 ]; then
+            setup_data_home=${XDG_DATA_HOME:-"$HOME/.local/share"}
+            case "$HOME" in
+                /*) ;;
+                *) echo 'HOME must be an absolute path.' >&2; return 1 ;;
+            esac
+            case "$setup_data_home" in
+                /*) ;;
+                *) echo 'XDG_DATA_HOME must be an absolute path.' >&2; return 1 ;;
+            esac
+        fi
         sh "$setup_tmp/source/install.sh" "$@"
-        return $?
+        if [ "$setup_persist" = 1 ]; then
+            umask 077
+            mkdir -p "$setup_data_home/herdr-setup/runtimes" "$HOME/.local/bin"
+            setup_runtime_parent=$(CDPATH='' cd -- "$setup_data_home/herdr-setup/runtimes" && pwd -P)
+            setup_bin=$(CDPATH='' cd -- "$HOME/.local/bin" && pwd -P)
+            setup_runtime=$(mktemp -d "$setup_runtime_parent/runtime.XXXXXX")
+            mkdir -p "$setup_runtime/src/installer"
+            cp "$setup_tmp/source/uninstall.sh" "$setup_runtime/uninstall.sh"
+            cp "$setup_tmp/source/dependencies.json" "$setup_runtime/dependencies.json"
+            cp "$setup_tmp/source/src/installer/main.py" "$setup_runtime/src/installer/main.py"
+            cp "$setup_tmp/source/src/installer/output.py" "$setup_runtime/src/installer/output.py"
+            cp "$setup_tmp/source/src/installer/uninstall.py" "$setup_runtime/src/installer/uninstall.py"
+            chmod 700 "$setup_runtime/uninstall.sh"
+            setup_command_tmp=$(mktemp "$setup_bin/.herdr-setup-uninstall.XXXXXX")
+            python3 - "$setup_runtime" "$setup_command_tmp" "$setup_bin/herdr-setup-uninstall" <<'PY'
+import os
+from pathlib import Path
+import shlex
+import sys
+
+runtime = Path(sys.argv[1])
+Path(sys.argv[2]).write_text(
+    '#!/bin/sh\nexec ' + shlex.quote(str(runtime / 'uninstall.sh')) +
+    ' --manifest ' + shlex.quote(str(runtime / 'dependencies.json')) + ' "$@"\n'
+)
+os.chmod(sys.argv[2], 0o700)
+os.replace(sys.argv[2], sys.argv[3])
+PY
+        fi
+        return 0
     fi
 
     setup_bootstrap=1
@@ -94,7 +137,8 @@ herdr_setup_main() {
         fi
         python3 "$setup_root/src/installer/bootstrap.py"
     fi
-    if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; assert sys.version_info >= (3, 11)' >/dev/null 2>&1; then
+    if command -v python3 >/dev/null 2>&1 &&
+       python3 -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)' >/dev/null 2>&1; then
         exec python3 "$setup_root/src/installer/main.py" "$@"
     fi
     if command -v uv >/dev/null 2>&1; then

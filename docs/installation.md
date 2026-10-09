@@ -24,13 +24,16 @@ Your terminal application and coding-agent CLIs are installed separately. The Li
 To drop setup shell integration without removing Herdr or system packages:
 
 ```sh
-./uninstall.sh                  # Remove the # >>> herdr-setup >>> loader block
-./uninstall.sh --all-shell-blocks  # Also remove the herdr-setup tools block
-./uninstall.sh --plugins --yes  # Above plus herdr plugin uninstall for each enabled manifest plugin
-./uninstall.sh --dry-run --plugins  # Preview plugin ids from dependencies.json
+herdr-setup-uninstall                  # Remove the # >>> herdr-setup >>> loader block
+herdr-setup-uninstall --all-shell-blocks  # Also remove the herdr-setup tools block
+herdr-setup-uninstall --plugins --yes  # Above plus herdr plugin uninstall for each enabled manifest plugin
+herdr-setup-uninstall --dry-run --plugins  # Preview plugin ids from dependencies.json
 ```
 
-Install copies `dependencies.json` to `~/.local/share/herdr-setup/` so uninstall can find the manifest after a curl install. Bootstrap packages, Herdr, and `~/.config/herdr` are not removed.
+The curl installer keeps the uninstall runtime under
+`~/.local/share/herdr-setup/runtimes/` and installs
+`~/.local/bin/herdr-setup-uninstall`. From a checkout, `./uninstall.sh` remains
+equivalent. Bootstrap packages, Herdr, and `~/.config/herdr` are not removed.
 
 `--dry-run` and `--help` skip bootstrapping and require Python 3.11+ or uv already available.
 

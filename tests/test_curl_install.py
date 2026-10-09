@@ -42,8 +42,11 @@ shutil.copyfile(os.environ['TEST_ARCHIVE'], sys.argv[sys.argv.index('--output') 
         files = files or {
             'release/install.sh': self.script,
             'release/dependencies.json': '{}',
+            'release/uninstall.sh': '#!/bin/sh\nprintf "persistent uninstall %s\\n" "$*"\n',
             'release/src/installer/bootstrap.py': '',
             'release/src/installer/main.py': 'import json,sys\nfrom pathlib import Path\nprint(json.dumps({"file":str(Path(__file__).resolve()),"args":sys.argv[1:]}))\n',
+            'release/src/installer/output.py': '',
+            'release/src/installer/uninstall.py': '',
         }
         with tarfile.open(self.archive, 'w:gz') as archive:
             for name, contents in files.items():
@@ -62,7 +65,16 @@ shutil.copyfile(os.environ['TEST_ARCHIVE'], sys.argv[sys.argv.index('--output') 
         self.assertEqual(result.returncode, 0, result.stderr)
         output = json.loads(result.stdout.splitlines()[-1])
         self.assertFalse(Path(output['file']).exists())
-        self.assertFalse((self.root / 'data').exists())
+        command = self.root / '.local/bin/herdr-setup-uninstall'
+        self.assertTrue(command.is_file())
+        self.assertTrue(os.access(command, os.X_OK))
+        uninstall = subprocess.run([command, '--dry-run'], env=self.env, capture_output=True, text=True)
+        self.assertEqual(uninstall.returncode, 0, uninstall.stderr)
+        self.assertIn('persistent uninstall --manifest ', uninstall.stdout)
+        self.assertTrue(uninstall.stdout.endswith(' --dry-run\n'))
+        moved_env = {**self.env, 'XDG_DATA_HOME': str(self.root / 'different data')}
+        uninstall = subprocess.run([command, '--dry-run'], env=moved_env, capture_output=True, text=True)
+        self.assertEqual(uninstall.returncode, 0, uninstall.stderr)
         self.assertEqual(output['args'], ['--no-shell'])
 
     def test_preview_does_not_create_persistent_installation(self):
@@ -70,6 +82,40 @@ shutil.copyfile(os.environ['TEST_ARCHIVE'], sys.argv[sys.argv.index('--output') 
         result = self.invoke('--dry-run')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse((self.root / 'data').exists())
+
+    def test_existing_launcher_symlink_is_replaced_without_following_it(self):
+        self.archive_files()
+        target = self.root / 'do-not-overwrite'
+        target.write_text('preserved')
+        command = self.root / '.local/bin/herdr-setup-uninstall'
+        command.parent.mkdir(parents=True)
+        command.symlink_to(target)
+        result = self.invoke()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(target.read_text(), 'preserved')
+        self.assertTrue(command.is_file())
+        self.assertFalse(command.is_symlink())
+
+    def test_existing_launcher_directory_symlink_is_replaced(self):
+        self.archive_files()
+        target = self.root / 'do-not-enter'
+        target.mkdir()
+        command = self.root / '.local/bin/herdr-setup-uninstall'
+        command.parent.mkdir(parents=True)
+        command.symlink_to(target, target_is_directory=True)
+        result = self.invoke()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(list(target.iterdir()), [])
+        self.assertTrue(command.is_file())
+        self.assertFalse(command.is_symlink())
+
+    def test_relative_data_home_is_rejected_before_installation(self):
+        self.archive_files()
+        self.env['XDG_DATA_HOME'] = 'relative-data'
+        result = self.invoke()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('absolute path', result.stderr)
+        self.assertNotIn('"file":', result.stdout)
 
     def test_download_failure_does_not_run_installer(self):
         self.env['TEST_DOWNLOAD_FAIL'] = '1'

@@ -118,6 +118,13 @@ Open a new terminal after changing enabled plugins. Preview mode requires Python
 
 [Installation options and paths](docs/installation.md) · [Dependency reference](docs/dependencies.md) · [Development and Docker/VNC testing](CONTRIBUTING.md)
 
+## Uninstall
+
+After the one-line install, run `herdr-setup-uninstall` to remove shell
+integration. From a clone, run `./uninstall.sh`. Add `--plugins --yes` to also
+uninstall enabled managed plugins. System packages, Herdr, and its configuration
+remain installed.
+
 ## License
 
 Original project code is licensed under the [MIT License](LICENSE). Third-party code, themes, and game media retain their own terms.

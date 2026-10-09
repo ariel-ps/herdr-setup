@@ -2,6 +2,7 @@ import importlib.util
 import json
 import os
 import sys
+import subprocess
 import tempfile
 import time
 import unittest
@@ -58,6 +59,35 @@ class UninstallPluginTests(unittest.TestCase):
         self.assertEqual(removed, 1)
         self.assertEqual(run.call_count, 2)
         self.assertEqual(run.call_args_list[1].args[0], ['herdr', 'plugin', 'uninstall', 'a.example'])
+
+
+class UninstallWrapperTests(unittest.TestCase):
+    def test_uses_uv_when_system_python_is_too_old(self):
+        with tempfile.TemporaryDirectory() as temp:
+            tools = Path(temp)
+            python = tools / 'python3'
+            python.write_text('#!/bin/sh\n[ "$1" = "-c" ] && exit 1\nexit 99\n')
+            python.chmod(0o755)
+            capture = tools / 'uv-args.json'
+            uv = tools / 'uv'
+            uv.write_text(
+                f'#!{sys.executable}\n'
+                'import json, os, sys\n'
+                'from pathlib import Path\n'
+                'Path(os.environ["TEST_CALLS"]).write_text(json.dumps(sys.argv[1:]))\n'
+                'sys.exit(23)\n'
+            )
+            uv.chmod(0o755)
+            result = subprocess.run(
+                ['sh', str(ROOT / 'uninstall.sh'), '--dry-run'],
+                env={**os.environ, 'PATH': f'{tools}:/usr/bin:/bin', 'TEST_CALLS': str(capture)},
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 23, result.stderr)
+            self.assertEqual(json.loads(capture.read_text()), [
+                'run', '--no-project', '--python', '3.11', 'python',
+                str(ROOT / 'src/installer/uninstall.py'), '--dry-run',
+            ])
 
 
 class ResolveManifestTests(unittest.TestCase):
