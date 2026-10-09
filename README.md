@@ -82,8 +82,8 @@ In a repository, press **Cmd+Shift+G** or **prefix+d** to open Lazygit; press **
 
 Interactive shells get fzf key bindings, `ls`, `ll`, and `tree` through eza, and `cat` through bat; existing aliases are preserved. Project jumps come from your own shell config (for example dev-env `goto_*` helpers), not from Herdr Setup.
 
-Launch an installed coding agent with `claude-danger`, `codex-danger`,
-`cursor-danger`, or `deepcode-danger`. These shortcuts bypass agent permission
+Launch an installed coding agent with `agy-danger`, `claude-danger`,
+`codex-danger`, `cursor-danger`, or `deepcode-danger`. These shortcuts bypass agent permission
 prompts and forward your arguments. Install and sign into the agent CLI first;
 [shortcut details](https://github.com/ariel-ps/herdr-sessions#agent-shortcuts).
 
