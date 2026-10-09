@@ -255,6 +255,7 @@ source "$1"
             env = {'HOME': temp, 'SHELL': '/bin/bash', 'HERDR_CONFIG_PATH': '',
                    'XDG_CONFIG_HOME': str(root / 'preferences'), 'XDG_DATA_HOME': str(root / 'data')}
             with patch.dict(os.environ, env), patch.object(installer, 'ROOT', root), \
+                 patch.object(installer.shutil, 'which', return_value='/bin/bash'), \
                  patch.object(installer, 'run', side_effect=lambda *a, **kw: str(root / 'lazygit') if a[0] == 'lazygit' else 'herdr 0.9.3'):
                 self.assertEqual(installer.main([]), 0)
                 config = root / 'preferences/herdr/config.toml'
