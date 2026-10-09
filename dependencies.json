@@ -104,7 +104,7 @@
       "name": "Herdr Doomface",
       "repository": "ariel-ps/herdr-doomface",
       "subdir": "",
-      "ref": "7d7689862999b005a2fa7960f8c3ab5c5b2d374a",
+      "ref": "66a76c644a50de07c176396de43e654b484018aa",
       "enabled": true,
       "config": "config.sh"
     },
