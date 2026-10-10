@@ -14,12 +14,6 @@ status_indicators = "symbols"
 [ui.toast]
 delivery = "terminal"
 
-[ui.sidebar.agents.rows_by_agent]
-claude = [
-  ["state_icon", "machine", "workspace", "tab"],
-  ["agent", "$doomface"],
-]
-
 # The Alerts plugin handles paired flash/sound alerts.
 [experimental]
 kitty_graphics = true

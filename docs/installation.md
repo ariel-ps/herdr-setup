@@ -96,10 +96,10 @@ New configurations use your selected shell, the Catppuccin theme, terminal notif
 
 The palette cache is prepared during installation. New panes apply the colors automatically; run `herdr-themes-build` to rebuild it later.
 
-Optional sound and sprite packs are fetched through the Alerts plugin's helpers. Alerts use a bundled tone when the selected sound is unavailable. Doom indicators require their assets and Claude session data.
+Optional sound and sprite packs are fetched through the Alerts plugin's helpers. Alerts use a bundled tone when the selected sound is unavailable.
 
 ## Upgrading from Herdr Kit
 
 The installer replaces the combined Herdr Kit with independently selectable plugins. After successful installation, it stops the old Doom overlays and disables the old plugin to avoid duplicate hooks. Existing `config.sh` settings are copied into each new hook plugin's configuration directory when it has no settings yet. The old files remain available, and the plugin registry is backed up.
 
-Open a new terminal to load the enabled plugins' helpers. Disabling Doomface stops its overlay within the polling interval; close any standalone Doom widget panes separately.
+Open a new terminal to load the enabled plugins' helpers.
