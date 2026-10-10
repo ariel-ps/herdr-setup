@@ -100,15 +100,6 @@
       "config": "config.sh"
     },
     {
-      "id": "dev.ariel.herdr-doomface",
-      "name": "Herdr Doomface",
-      "repository": "ariel-ps/herdr-doomface",
-      "subdir": "",
-      "ref": "cbaeb3551bdfa7f36e9b4f33cf0485294c64ccbe",
-      "enabled": true,
-      "config": "config.sh"
-    },
-    {
       "id": "dev.ariel.journal-repo",
       "name": "Journal Repo",
       "repository": "ariel-ps/repo-journal",

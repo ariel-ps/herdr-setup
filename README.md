@@ -22,7 +22,6 @@ Use this to set up a terminal workspace for AI coding agents, Herdr plugins, tmu
 | Sound and flash alerts when agents finish or need input | [Alerts](https://github.com/ariel-ps/herdr-alerts) |
 | Saved pane layouts, agent grids, and automatic `code` and `board` tabs | [Layouts](https://github.com/ariel-ps/herdr-layouts) |
 | Agent launch shortcuts, inspection, and session naming | [Sessions](https://github.com/ariel-ps/herdr-sessions) |
-| A Doom face that reflects Claude's context usage | [Doomface](https://github.com/ariel-ps/herdr-doomface) |
 | Git-root investigation scratch notes in `.journal/` | [Journal Repo](https://github.com/ariel-ps/repo-journal) (`journal-repo` CLI, installed via setup) |
 | Git popup with highlighted diffs and colored agent branches | Lazygit + delta |
 | fzf in the shell (history, paths) | fzf |
